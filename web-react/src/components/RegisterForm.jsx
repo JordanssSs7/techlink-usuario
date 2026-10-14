@@ -3,7 +3,41 @@ import { useState } from 'react';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const SOLO_LETRAS = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+(?:[ '-][A-Za-zÁÉÍÓÚáéíóúÑñÜü]+)*$/;
 
-
+// Input de contraseña con botón para mostrar u ocultar el texto
+function PasswordInput({ id, name, value, onChange }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div style={styles.passwordWrapper}>
+      <input
+        type={visible ? 'text' : 'password'}
+        id={id}
+        name={name}
+        value={value}
+        onChange={onChange}
+        style={{ ...styles.input, ...styles.passwordInput }}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        style={styles.eyeButton}
+        aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        aria-pressed={visible}
+      >
+        {visible ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
 
 // Definir modelo de datos inicial, y formulario institucional
 export default function RegisterForm() {
@@ -206,26 +240,22 @@ export default function RegisterForm() {
 
         <div style={styles.inputGroup}>
           <label htmlFor="password" style={styles.label}>Contraseña</label>
-          <input
-            type="password"
+          <PasswordInput
             id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            style={styles.input}
           />
           {errors.password && <span style={styles.errorText}>{errors.password}</span>}
         </div>
 
         <div style={styles.inputGroup}>
           <label htmlFor="confirmPassword" style={styles.label}>Confirmar Contraseña</label>
-          <input
-            type="password"
+          <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            style={styles.input}
           />
           {errors.confirmPassword && <span style={styles.errorText}>{errors.confirmPassword}</span>}
         </div>
@@ -248,6 +278,9 @@ const styles = {
   label: { fontSize: '13px', fontWeight: '600', color: '#333' },
   input: { padding: '0.6rem 0.8rem', marginTop: '0.3rem', border: '1px solid #ccc', borderRadius: '6px', fontSize: '14px' },
   button: { width: '100%', padding: '0.8rem', background: '#0052cc', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', marginTop: '0.5rem' },
+  passwordWrapper: { position: 'relative', display: 'flex', flexDirection: 'column' },
+  passwordInput: { paddingRight: '2.6rem' },
+  eyeButton: { position: 'absolute', right: '0.5rem', top: '0.3rem', bottom: 0, height: '2.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#666', padding: '0 0.3rem' },
   errorText: { color: '#d32f2f', fontSize: '12px', marginTop: '4px' },
   errorAlert: { background: '#ffebee', color: '#c62828', padding: '0.6rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '13px', textAlign: 'center' }
 };
