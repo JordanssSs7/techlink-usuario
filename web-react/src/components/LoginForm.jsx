@@ -6,7 +6,9 @@ import { loginRequest, googleRequest, MOCK_AUTH } from '../auth/authApi';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const DOMINIO = '@tecsup.edu.pe';
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@tecsup\.edu\.pe$/i;
+// Correo y contraseña es el acceso de administradores: acepta cualquier dominio.
+// Alumnos y mentores entran con Google, que sí se limita a DOMINIO.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Carga el script de Google Identity Services una sola vez
 let gsiPromise;
@@ -29,6 +31,7 @@ export default function LoginForm() {
   const [form, setForm] = useState({ correoInstitucional: '', password: '' });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [mostrarAyuda, setMostrarAyuda] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
@@ -41,8 +44,8 @@ export default function LoginForm() {
   const validate = () => {
     const newErrors = {};
     const correo = form.correoInstitucional.trim();
-    if (!correo) newErrors.correoInstitucional = 'Ingresa tu correo institucional.';
-    else if (!EMAIL_REGEX.test(correo)) newErrors.correoInstitucional = `Usa tu correo institucional (${DOMINIO}).`;
+    if (!correo) newErrors.correoInstitucional = 'Ingresa tu correo.';
+    else if (!EMAIL_REGEX.test(correo)) newErrors.correoInstitucional = 'Ingresa un correo válido.';
     if (!form.password) newErrors.password = 'Ingresa tu contraseña.';
     return newErrors;
   };
@@ -169,7 +172,7 @@ export default function LoginForm() {
                     name="correoInstitucional"
                     type="email"
                     autoComplete="username"
-                    placeholder={`usuario${DOMINIO}`}
+                    placeholder="correo@dominio.com"
                     value={form.correoInstitucional}
                     onChange={handleChange}
                     aria-invalid={!!errors.correoInstitucional}
@@ -180,7 +183,13 @@ export default function LoginForm() {
                 <div className="login-field">
                   <div className="login-label-row">
                     <label htmlFor="password">Contraseña</label>
-                    <a href="#recuperar" className="login-forgot">¿Olvidaste tu contraseña?</a>
+                    <a
+                      href="#recuperar"
+                      className="login-forgot"
+                      onClick={(e) => { e.preventDefault(); setMostrarAyuda((v) => !v); }}
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </a>
                   </div>
                   <div className="login-password">
                     <input
@@ -204,6 +213,11 @@ export default function LoginForm() {
                     </button>
                   </div>
                   {errors.password && <span className="login-error">{errors.password}</span>}
+                  {mostrarAyuda && (
+                    <p className="login-hint" role="note">
+                      Aún no hay recuperación automática. Pide a otro administrador que restablezca tu contraseña.
+                    </p>
+                  )}
                 </div>
 
                 <button type="submit" className="login-submit" disabled={isSubmitting}>

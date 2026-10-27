@@ -39,6 +39,16 @@ export default function AuthProvider({ children }) {
     setSesion(null);
   }, []);
 
+  // Actualiza datos del usuario en la sesión (por ejemplo, el ciclo elegido tras el primer ingreso).
+  const actualizarUsuario = useCallback((cambios) => {
+    setSesion((actual) => {
+      if (!actual) return actual;
+      const nueva = { ...actual, usuario: { ...actual.usuario, ...cambios } };
+      guardarSesion(nueva);
+      return nueva;
+    });
+  }, []);
+
   // fetch con el token. Si el backend responde 401 (token vencido o inválido), cierra la sesión.
   const authFetch = useCallback(async (ruta, opciones = {}) => {
     const response = await fetch(`${API_URL}${ruta}`, {
@@ -59,8 +69,9 @@ export default function AuthProvider({ children }) {
     estaAutenticado: !!sesion,
     login,
     logout,
+    actualizarUsuario,
     authFetch
-  }), [sesion, login, logout, authFetch]);
+  }), [sesion, login, logout, actualizarUsuario, authFetch]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
