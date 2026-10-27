@@ -35,13 +35,12 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Publicas: registro (HU-01), login y login con Google (HU-02).
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/google").permitAll()
+                        // Publicas: login de administradores y login con Google (HU-02).
+                        .requestMatchers("/api/auth/login", "/api/auth/google").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // HU-02 - Por rol: cada panel solo para su rol (las rutas se iran creando en las siguientes HU).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/mentor/**").hasAnyRole("MENTOR", "ADMIN")
-                        .requestMatchers("/api/estudiante/**").hasAnyRole("ESTUDIANTE", "MENTOR", "ADMIN")
+                        .requestMatchers("/api/mentor/**").hasRole("MENTOR")
                         // Todo lo demas (incluido /api/auth/me) exige un token valido.
                         .anyRequest().authenticated())
                 // HU-02 - OAuth2 Resource Server: valida el JWT que llega en "Authorization: Bearer <token>".

@@ -2,6 +2,7 @@ package com.techlink.service;
 
 import com.techlink.dto.LoginRequest;
 import com.techlink.dto.LoginResponse;
+import com.techlink.exception.AccesoSoloConGoogleException;
 import com.techlink.exception.CredencialesInvalidasException;
 import com.techlink.exception.CuentaBloqueadaException;
 import com.techlink.exception.CuentaInactivaException;
@@ -42,8 +43,9 @@ class AuthServiceLoginTest {
         authService = new AuthService(usuarioRepository, Mockito.mock(EstudianteRepository.class),
                 Mockito.mock(RolRepository.class), encoder, jwtService, Mockito.mock(GoogleTokenVerifier.class));
 
+        // El login con contraseña es solo para administradores.
         Rol rol = new Rol();
-        rol.setNombre("ESTUDIANTE");
+        rol.setNombre("ADMIN");
         usuario = new Usuario();
         usuario.setId(1);
         usuario.setNombres("Ana");
@@ -64,7 +66,41 @@ class AuthServiceLoginTest {
 
         assertEquals("token-de-prueba", respuesta.token());
         assertEquals("Bearer", respuesta.tipo());
-        assertEquals("ESTUDIANTE", respuesta.usuario().rol());
+        assertEquals("ADMIN", respuesta.usuario().rol());
+    }
+
+    @Test
+    void elAdministradorPuedeEntrarConUnCorreoDeCualquierDominio() {
+        usuario.setCorreoInstitucional("admin@otraempresa.com");
+        when(usuarioRepository.findByCorreoInstitucional("admin@otraempresa.com")).thenReturn(Optional.of(usuario));
+
+        LoginResponse respuesta = authService.login(new LoginRequest("admin@otraempresa.com", PASSWORD));
+
+        assertEquals("ADMIN", respuesta.usuario().rol());
+    }
+
+    @Test
+    void unEstudianteDebeUsarGoogleYNoCuentaIntentos() {
+        Rol estudiante = new Rol();
+        estudiante.setNombre("ESTUDIANTE");
+        usuario.setRol(estudiante);
+
+        AccesoSoloConGoogleException error = assertThrows(AccesoSoloConGoogleException.class,
+                () -> authService.login(new LoginRequest(CORREO, PASSWORD)));
+
+        assertEquals("Usa Google para ingresar", error.getMessage());
+        assertEquals(0, usuario.getIntentosFallidos());
+    }
+
+    @Test
+    void unMentorDebeUsarGoogle() {
+        Rol mentor = new Rol();
+        mentor.setNombre("MENTOR");
+        usuario.setRol(mentor);
+
+        assertThrows(AccesoSoloConGoogleException.class,
+                () -> authService.login(new LoginRequest(CORREO, "incorrecta1")));
+        assertEquals(0, usuario.getIntentosFallidos());
     }
 
     @Test

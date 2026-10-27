@@ -3,13 +3,10 @@ package com.techlink.service;
 import com.techlink.dto.GoogleLoginRequest;
 import com.techlink.dto.LoginRequest;
 import com.techlink.dto.LoginResponse;
-import com.techlink.dto.RegisterRequest;
-import com.techlink.dto.RegisterResponse;
-import com.techlink.exception.CorreoDuplicadoException;
+import com.techlink.exception.AccesoSoloConGoogleException;
 import com.techlink.exception.CredencialesInvalidasException;
 import com.techlink.exception.CuentaBloqueadaException;
 import com.techlink.exception.CuentaInactivaException;
-import com.techlink.exception.DominioInvalidoException;
 import com.techlink.exception.UsuarioNoRegistradoException;
 import com.techlink.model.EstadoUsuario;
 import com.techlink.model.Estudiante;
@@ -27,12 +24,13 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-// Logica de negocio de autenticacion: registro de estudiantes (HU-01) e inicio de sesion (HU-02).
+// Logica de negocio de autenticacion (HU-02): login con Google para alumnos y mentores, login con contraseña para
+// administradores, y eleccion del ciclo en el primer ingreso. No hay registro con contraseña.
 @Service
 public class AuthService {
 
-    private static final String DOMINIO_INSTITUCIONAL = "@tecsup.edu.pe";
     private static final String ROL_ESTUDIANTE = "ESTUDIANTE";
+    private static final String ROL_ADMIN = "ADMIN";
     // HU-02: reglas del bloqueo (3 intentos fallidos = 15 minutos) y mensaje del login.
     private static final int MAX_INTENTOS_FALLIDOS = 3;
     private static final long MINUTOS_BLOQUEO = 15;
@@ -60,54 +58,8 @@ public class AuthService {
         this.googleTokenVerifier = googleTokenVerifier;
     }
 
-    // HU-01 - REGISTRO. @Transactional: si falla algun guardado, se revierten ambos (usuario y estudiante).
-    @Transactional
-    public RegisterResponse register(RegisterRequest request) {
-        // El correo se guarda TAL CUAL lo escribio el usuario (con sus mayusculas); el login debe escribirlo igual.
-        String correo = request.correoInstitucional().trim();
-
-        // 1. Solo se aceptan correos institucionales (el dominio se compara sin distinguir mayusculas).
-        if (!correo.toLowerCase().endsWith(DOMINIO_INSTITUCIONAL)) {
-            throw new DominioInvalidoException("Debes registrarte con tu correo institucional " + DOMINIO_INSTITUCIONAL);
-        }
-        // 2. El correo no debe estar ya registrado.
-        if (usuarioRepository.existsByCorreoInstitucional(correo)) {
-            throw new CorreoDuplicadoException("El correo ya está registrado");
-        }
-
-        // 3. Todo registro nuevo nace con rol ESTUDIANTE.
-        Rol rol = rolRepository.findByNombre(ROL_ESTUDIANTE)
-                .orElseThrow(() -> new IllegalStateException("No existe el rol " + ROL_ESTUDIANTE));
-
-        // 4. Se crea el usuario con la contraseña cifrada (BCrypt).
-        Usuario usuario = new Usuario();
-        usuario.setNombres(request.nombres().trim());
-        usuario.setApellidos(request.apellidos().trim());
-        usuario.setCorreoInstitucional(correo);
-        usuario.setContrasenaHash(passwordEncoder.encode(request.password()));
-        usuario.setRol(rol);
-        usuarioRepository.save(usuario);
-
-        // 5. Se crea su perfil de estudiante (ciclo y codigo opcional).
-        Estudiante estudiante = new Estudiante();
-        estudiante.setUsuario(usuario);
-        estudiante.setCiclo(request.ciclo());
-        String codigo = request.codigoEstudiante();
-        estudiante.setCodigoEstudiante(codigo == null || codigo.isBlank() ? null : codigo.trim());
-        estudianteRepository.saveAndFlush(estudiante);
-
-        // 6. Se devuelve solo informacion segura (sin contraseña).
-        return new RegisterResponse(
-                usuario.getId(),
-                usuario.getNombres(),
-                usuario.getApellidos(),
-                usuario.getCorreoInstitucional(),
-                rol.getNombre(),
-                estudiante.getCiclo(),
-                estudiante.getCodigoEstudiante());
-    }
-
-    // HU-02 - LOGIN. noRollbackFor: aunque se lance la excepcion de error, el contador de intentos SI debe guardarse.
+    // HU-02 - LOGIN CON CONTRASEÑA, solo para administradores (correo de cualquier dominio).
+    // noRollbackFor: aunque se lance la excepcion de error, el contador de intentos SI debe guardarse.
     @Transactional(noRollbackFor = {CredencialesInvalidasException.class, CuentaBloqueadaException.class})
     public LoginResponse login(LoginRequest request) {
         String correo = request.correoInstitucional().trim();
@@ -122,6 +74,11 @@ public class AuthService {
         // 1.1 Las cuentas creadas con Google no tienen contraseña: se avisa sin llamar a BCrypt ni contar intentos.
         if (usuario.getContrasenaHash() == null) {
             throw new CredencialesInvalidasException("Esta cuenta usa Google");
+        }
+
+        // 1.2 Alumnos y mentores entran solo con Google: el correo y contraseña es solo para administradores (403).
+        if (!ROL_ADMIN.equals(usuario.getRol().getNombre())) {
+            throw new AccesoSoloConGoogleException("Usa Google para ingresar");
         }
 
         LocalDateTime ahora = LocalDateTime.now();
@@ -225,6 +182,15 @@ public class AuthService {
 
     private String recortar(String texto, int maximo) {
         return texto.length() <= maximo ? texto : texto.substring(0, maximo);
+    }
+
+    // HU-02 - GET /api/me: el usuario dueño del token, para restaurar la sesion en el frontend.
+    @Transactional(readOnly = true)
+    public LoginResponse.UsuarioSesion usuarioActual(Integer idUsuario) {
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new UsuarioNoRegistradoException("El usuario ya no existe"));
+        Integer ciclo = estudianteRepository.findByUsuarioId(idUsuario).map(Estudiante::getCiclo).orElse(null);
+        return datosDeSesion(usuario, ciclo);
     }
 
     // HU-02 (Google) - PATCH /api/estudiantes/me: guarda el ciclo que el estudiante elige en su primer ingreso.

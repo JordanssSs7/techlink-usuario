@@ -14,22 +14,10 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // HU-01 - 400: dominio de correo no valido.
-    @ExceptionHandler(DominioInvalidoException.class)
-    public ResponseEntity<Map<String, Object>> dominioInvalido(DominioInvalidoException ex) {
-        return error(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    // HU-01 - 409: correo repetido.
-    @ExceptionHandler(CorreoDuplicadoException.class)
-    public ResponseEntity<Map<String, Object>> correoDuplicado(CorreoDuplicadoException ex) {
-        return error(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
-    // HU-01 - 409: respaldo si MySQL rechaza un duplicado (correo o codigo de estudiante).
+    // 409: respaldo si MySQL rechaza un duplicado (por ejemplo, dos ingresos simultaneos con la misma cuenta de Google).
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> integridad(DataIntegrityViolationException ex) {
-        return error(HttpStatus.CONFLICT, "El correo o el código de estudiante ya está registrado");
+        return error(HttpStatus.CONFLICT, "La cuenta ya existe. Inténtalo de nuevo");
     }
 
     // HU-02 - 401: correo o contraseña incorrectos en el login.
@@ -48,13 +36,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.LOCKED).body(body);
     }
 
+    // HU-02 - 403: alumnos y mentores deben entrar con Google, no con contraseña.
+    @ExceptionHandler(AccesoSoloConGoogleException.class)
+    public ResponseEntity<Map<String, Object>> accesoSoloConGoogle(AccesoSoloConGoogleException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     // HU-02 - 403: la cuenta esta inactiva.
     @ExceptionHandler(CuentaInactivaException.class)
     public ResponseEntity<Map<String, Object>> cuentaInactiva(CuentaInactivaException ex) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
-    // HU-02 (Google) - 404: entra con Google pero aun no tiene cuenta (debe registrarse primero).
+    // HU-02 - 404: no existe el usuario o no tiene perfil de estudiante.
     @ExceptionHandler(UsuarioNoRegistradoException.class)
     public ResponseEntity<Map<String, Object>> usuarioNoRegistrado(UsuarioNoRegistradoException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage());
