@@ -23,8 +23,8 @@ public class Usuario {
     @Column(name = "correo_institucional", nullable = false, unique = true, length = 150)
     private String correoInstitucional;
 
-    // Se guarda el hash BCrypt, nunca la contraseña en texto plano.
-    @Column(name = "contrasena_hash", nullable = false)
+    // Se guarda el hash BCrypt, nunca la contraseña en texto plano. Es null en las cuentas creadas con Google (V3).
+    @Column(name = "contrasena_hash")
     private String contrasenaHash;
 
     // Relación muchos usuarios -> un rol (clave foránea id_rol).
@@ -47,6 +47,14 @@ public class Usuario {
     // HU-02: si tiene fecha futura, la cuenta está bloqueada hasta ese momento.
     @Column(name = "bloqueado_hasta")
     private LocalDateTime bloqueadoHasta;
+
+    // HU-02 (Google): como se creo la cuenta y el identificador estable de su cuenta de Google (V3__google_login.sql).
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProveedorUsuario proveedor = ProveedorUsuario.LOCAL;
+
+    @Column(name = "google_id", length = 50, unique = true)
+    private String googleId;
 
     public Usuario() {
     }
@@ -76,6 +84,12 @@ public class Usuario {
 
     public Integer getIntentosFallidos() { return intentosFallidos; }
     public void setIntentosFallidos(Integer intentosFallidos) { this.intentosFallidos = intentosFallidos; }
+
+    public ProveedorUsuario getProveedor() { return proveedor; }
+    public void setProveedor(ProveedorUsuario proveedor) { this.proveedor = proveedor; }
+
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
 
     public LocalDateTime getBloqueadoHasta() { return bloqueadoHasta; }
     public void setBloqueadoHasta(LocalDateTime bloqueadoHasta) { this.bloqueadoHasta = bloqueadoHasta; }

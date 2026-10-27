@@ -34,7 +34,7 @@ class AuthServiceRegisterTest {
         RolRepository rolRepository = Mockito.mock(RolRepository.class);
         EstudianteRepository estudianteRepository = Mockito.mock(EstudianteRepository.class);
         authService = new AuthService(usuarioRepository, estudianteRepository, rolRepository,
-                new BCryptPasswordEncoder(), Mockito.mock(JwtService.class));
+                new BCryptPasswordEncoder(), Mockito.mock(JwtService.class), Mockito.mock(GoogleTokenVerifier.class));
 
         Rol rol = new Rol();
         rol.setNombre("ESTUDIANTE");

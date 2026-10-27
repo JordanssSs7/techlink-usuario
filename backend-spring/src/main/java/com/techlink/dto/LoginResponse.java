@@ -8,12 +8,14 @@ public record LoginResponse(
         UsuarioSesion usuario
 ) {
     // Datos del usuario que el frontend usa para mostrar su nombre y elegir el panel según el rol.
+    // ciclo es null para quien aun no lo eligio (primer ingreso con Google) y para los roles sin perfil de estudiante.
     public record UsuarioSesion(
             Integer id,
             String nombres,
             String apellidos,
             String correoInstitucional,
-            String rol
+            String rol,
+            Integer ciclo
     ) {
     }
 }

@@ -1,5 +1,6 @@
 package com.techlink.controller;
 
+import com.techlink.dto.GoogleLoginRequest;
 import com.techlink.dto.LoginRequest;
 import com.techlink.dto.LoginResponse;
 import com.techlink.dto.RegisterRequest;
@@ -39,6 +40,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    // HU-02 (Google) - POST /api/auth/google: verifica el token de Google y devuelve nuestro JWT (igual que /login).
+    @PostMapping("/google")
+    public ResponseEntity<LoginResponse> google(@Valid @RequestBody GoogleLoginRequest request) {
+        return ResponseEntity.ok(authService.loginConGoogle(request));
     }
 
     // HU-02 - GET /api/auth/me: ruta protegida. Devuelve quien es el dueño del token (id, correo y rol).

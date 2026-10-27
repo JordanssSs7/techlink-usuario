@@ -35,8 +35,8 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Publicas: registro (HU-01) y login (HU-02).
-                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        // Publicas: registro (HU-01), login y login con Google (HU-02).
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/google").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // HU-02 - Por rol: cada panel solo para su rol (las rutas se iran creando en las siguientes HU).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

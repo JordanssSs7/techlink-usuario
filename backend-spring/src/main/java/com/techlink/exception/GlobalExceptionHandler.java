@@ -54,6 +54,24 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
+    // HU-02 (Google) - 404: entra con Google pero aun no tiene cuenta (debe registrarse primero).
+    @ExceptionHandler(UsuarioNoRegistradoException.class)
+    public ResponseEntity<Map<String, Object>> usuarioNoRegistrado(UsuarioNoRegistradoException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    // HU-02 (Google) - 403: la cuenta de Google no es del dominio institucional.
+    @ExceptionHandler(CorreoNoInstitucionalException.class)
+    public ResponseEntity<Map<String, Object>> correoNoInstitucional(CorreoNoInstitucionalException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    // HU-02 (Google) - 503: falta configurar GOOGLE_CLIENT_ID en el servidor.
+    @ExceptionHandler(GoogleNoConfiguradoException.class)
+    public ResponseEntity<Map<String, Object>> googleNoConfigurado(GoogleNoConfiguradoException ex) {
+        return error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
     // 400: fallan las validaciones del DTO; se listan los campos con error.
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> validacion(MethodArgumentNotValidException ex) {
