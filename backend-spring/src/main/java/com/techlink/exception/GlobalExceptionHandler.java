@@ -14,26 +14,48 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // HU-01 - 400: dominio de correo no valido.
     @ExceptionHandler(DominioInvalidoException.class)
-    // 400: dominio de correo no valido.
     public ResponseEntity<Map<String, Object>> dominioInvalido(DominioInvalidoException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    // HU-01 - 409: correo repetido.
     @ExceptionHandler(CorreoDuplicadoException.class)
-    // 409: correo repetido.
     public ResponseEntity<Map<String, Object>> correoDuplicado(CorreoDuplicadoException ex) {
         return error(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    // HU-01 - 409: respaldo si MySQL rechaza un duplicado (correo o codigo de estudiante).
     @ExceptionHandler(DataIntegrityViolationException.class)
-    // 409: respaldo si MySQL rechaza un duplicado (correo o codigo de estudiante).
     public ResponseEntity<Map<String, Object>> integridad(DataIntegrityViolationException ex) {
         return error(HttpStatus.CONFLICT, "El correo o el código de estudiante ya está registrado");
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
+    // HU-02 - 401: correo o contraseña incorrectos en el login.
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<Map<String, Object>> credencialesInvalidas(CredencialesInvalidasException ex) {
+        return error(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    // HU-02 - 423: cuenta bloqueada por intentos fallidos; se informa cuantos minutos faltan.
+    @ExceptionHandler(CuentaBloqueadaException.class)
+    public ResponseEntity<Map<String, Object>> cuentaBloqueada(CuentaBloqueadaException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", HttpStatus.LOCKED.value());
+        body.put("error", ex.getMessage());
+        body.put("minutosRestantes", ex.getMinutosRestantes());
+        return ResponseEntity.status(HttpStatus.LOCKED).body(body);
+    }
+
+    // HU-02 - 403: la cuenta esta inactiva.
+    @ExceptionHandler(CuentaInactivaException.class)
+    public ResponseEntity<Map<String, Object>> cuentaInactiva(CuentaInactivaException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     // 400: fallan las validaciones del DTO; se listan los campos con error.
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> validacion(MethodArgumentNotValidException ex) {
         Map<String, String> campos = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors()

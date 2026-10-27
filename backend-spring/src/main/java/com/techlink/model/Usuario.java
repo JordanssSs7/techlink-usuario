@@ -40,6 +40,14 @@ public class Usuario {
     @Column(name = "fecha_registro", insertable = false, updatable = false)
     private LocalDateTime fechaRegistro;
 
+    // HU-02: contador de contraseñas incorrectas seguidas (V2__bloqueo_login.sql).
+    @Column(name = "intentos_fallidos", nullable = false)
+    private Integer intentosFallidos = 0;
+
+    // HU-02: si tiene fecha futura, la cuenta está bloqueada hasta ese momento.
+    @Column(name = "bloqueado_hasta")
+    private LocalDateTime bloqueadoHasta;
+
     public Usuario() {
     }
 
@@ -65,4 +73,10 @@ public class Usuario {
     public void setEstado(EstadoUsuario estado) { this.estado = estado; }
 
     public LocalDateTime getFechaRegistro() { return fechaRegistro; }
+
+    public Integer getIntentosFallidos() { return intentosFallidos; }
+    public void setIntentosFallidos(Integer intentosFallidos) { this.intentosFallidos = intentosFallidos; }
+
+    public LocalDateTime getBloqueadoHasta() { return bloqueadoHasta; }
+    public void setBloqueadoHasta(LocalDateTime bloqueadoHasta) { this.bloqueadoHasta = bloqueadoHasta; }
 }
