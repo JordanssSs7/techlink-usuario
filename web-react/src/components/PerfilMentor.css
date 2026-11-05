@@ -1,0 +1,115 @@
+/* Perfil del mentor (HU-05). Reutiliza las variables y los campos de LoginForm.css. */
+.mentor-page { justify-content: center; }
+
+.mentor-panel {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.mentor-caja { width: 100%; max-width: 440px; }
+
+/* Etiquetas (fortalezas y áreas) */
+.mentor-etiquetas-fila { display: flex; gap: 0.5rem; align-items: center; }
+.mentor-etiquetas-fila input { flex: 1; }
+
+.mentor-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.mentor-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.3rem 0.25rem 0.7rem;
+  font-size: 9px;
+  color: #fff;
+  background: var(--ink);
+  border-radius: 999px;
+}
+.mentor-etiqueta button {
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ink);
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.mentor-boton-chico {
+  padding: 0.5rem 0.9rem;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s;
+}
+.mentor-boton-chico:hover { border-color: var(--ink); }
+
+/* Grupos (cursos y disponibilidad) */
+.mentor-grupo { margin: 0 0 1.2rem; padding: 0; border: none; min-width: 0; }
+.mentor-grupo legend { margin-bottom: 0.5rem; padding: 0; font-size: 9px; font-weight: 700; }
+
+.mentor-cursos { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.mentor-curso {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.8rem;
+  font-size: 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.mentor-curso:hover { border-color: var(--ink); }
+.mentor-curso input { position: absolute; opacity: 0; pointer-events: none; }
+.mentor-curso-activo { color: #fff; background: var(--ink); border-color: var(--ink); }
+.mentor-curso:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Horarios */
+.mentor-horario {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.7rem;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.mentor-horario select,
+.mentor-horario input[type='time'] {
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.mentor-activo { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 9px; }
+.mentor-horario-error { grid-column: 1 / -1; margin: 0; }
+.mentor-agregar { margin-bottom: 0.8rem; }
+
+.mentor-salir { margin-top: 1.4rem; text-align: center; font-size: 9px; }
+.mentor-salir a { color: var(--ink); }
+
+@media (max-width: 480px) {
+  .mentor-horario { grid-template-columns: 1fr 1fr; }
+  .mentor-horario select { grid-column: 1 / -1; }
+}
