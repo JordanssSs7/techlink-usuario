@@ -2,6 +2,9 @@ package com.techlink.model;
 
 import jakarta.persistence.*;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 // Entidad que representa la tabla "estudiantes": perfil extra de un usuario con rol ESTUDIANTE.
 @Entity
 @Table(name = "estudiantes")
@@ -22,6 +25,13 @@ public class Estudiante {
 
     private Integer ciclo;
 
+    // HU-04: cursos que el estudiante quiere reforzar (tabla intermedia estudiante_cursos_criticos).
+    @ManyToMany
+    @JoinTable(name = "estudiante_cursos_criticos",
+            joinColumns = @JoinColumn(name = "id_estudiante"),
+            inverseJoinColumns = @JoinColumn(name = "id_curso"))
+    private Set<Curso> cursosCriticos = new LinkedHashSet<>();
+
     public Estudiante() {
     }
 
@@ -33,6 +43,9 @@ public class Estudiante {
 
     public String getCodigoEstudiante() { return codigoEstudiante; }
     public void setCodigoEstudiante(String codigoEstudiante) { this.codigoEstudiante = codigoEstudiante; }
+
+    public Set<Curso> getCursosCriticos() { return cursosCriticos; }
+    public void setCursosCriticos(Set<Curso> cursosCriticos) { this.cursosCriticos = cursosCriticos; }
 
     public Integer getCiclo() { return ciclo; }
     public void setCiclo(Integer ciclo) { this.ciclo = ciclo; }

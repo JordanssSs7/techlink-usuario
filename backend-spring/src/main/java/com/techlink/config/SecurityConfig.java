@@ -41,6 +41,8 @@ public class SecurityConfig {
                         // HU-02 - Por rol: cada panel solo para su rol (las rutas se iran creando en las siguientes HU).
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/mentor/**").hasRole("MENTOR")
+                        // HU-04: el agente de IA lo usan estudiantes y mentores (un mentor tambien puede necesitar ayuda).
+                        .requestMatchers("/api/agente/**").hasAnyRole("ESTUDIANTE", "MENTOR")
                         // Todo lo demas (incluido /api/auth/me) exige un token valido.
                         .anyRequest().authenticated())
                 // HU-02 - OAuth2 Resource Server: valida el JWT que llega en "Authorization: Bearer <token>".

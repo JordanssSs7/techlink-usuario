@@ -66,6 +66,16 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
+    // HU-04 - 400: los cursos criticos tienen datos incorrectos; se listan los campos con error.
+    @ExceptionHandler(CursosCriticosInvalidosException.class)
+    public ResponseEntity<Map<String, Object>> cursosCriticosInvalidos(CursosCriticosInvalidosException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 400);
+        body.put("error", ex.getMessage());
+        body.put("campos", ex.getCampos());
+        return ResponseEntity.badRequest().body(body);
+    }
+
     // HU-05 - 400: el perfil del mentor tiene datos incorrectos; se listan los campos con error.
     @ExceptionHandler(PerfilMentorInvalidoException.class)
     public ResponseEntity<Map<String, Object>> perfilMentorInvalido(PerfilMentorInvalidoException ex) {

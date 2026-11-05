@@ -45,10 +45,16 @@ public class GoogleTokenVerifier {
                                @Value("${app.google.client-secret:}") String clientSecret,
                                @Value("${app.google.token-uri:https://oauth2.googleapis.com/token}") String tokenUri,
                                @Value("${app.google.jwks-uri:https://www.googleapis.com/oauth2/v3/certs}") String jwksUri) {
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
+        this.clientId = sinEspacios(clientId);
+        this.clientSecret = sinEspacios(clientSecret);
         this.tokenUri = tokenUri;
         this.jwksUri = jwksUri;
+    }
+
+    // El Client ID y el secreto nunca llevan espacios: si se copiaron de un chat o de una pagina web puede colarse
+    // uno invisible (incluso un espacio no separable) y Google rechazaria las credenciales. Se quitan todos.
+    private static String sinEspacios(String valor) {
+        return valor == null ? null : valor.replaceAll("[\\s\\p{Z}\\u200B\\uFEFF]", "");
     }
 
     // Verifica lo que envio el frontend (code o idToken) y devuelve los datos del usuario de Google.

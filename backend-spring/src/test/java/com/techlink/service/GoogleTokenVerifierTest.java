@@ -118,6 +118,18 @@ class GoogleTokenVerifierTest {
     }
 
     @Test
+    void losEspaciosInvisiblesAlCopiarElClientIdYElSecretoSeIgnoran() throws Exception {
+        idTokenQueEntregaGoogle = tokenValido("ana@tecsup.edu.pe");
+        // Espacio al final, espacio no separable (como el que trae WhatsApp o una pagina web) y salto de linea.
+        GoogleTokenVerifier conEspacios = new GoogleTokenVerifier(" " + CLIENT_ID + " ", SECRET + " \n",
+                urlBase + "/token", urlBase + "/certs");
+
+        GoogleTokenVerifier.GoogleUsuario usuario = conEspacios.verificar("codigo-valido", null);
+
+        assertEquals("ana@tecsup.edu.pe", usuario.correo());
+    }
+
+    @Test
     void codigoQueGoogleRechazaEsInvalido() {
         assertThrows(CredencialesInvalidasException.class, () -> verificador.verificar("codigo-usado", null));
     }
