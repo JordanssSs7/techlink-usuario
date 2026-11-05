@@ -66,6 +66,16 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
+    // HU-05 - 400: el perfil del mentor tiene datos incorrectos; se listan los campos con error.
+    @ExceptionHandler(PerfilMentorInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> perfilMentorInvalido(PerfilMentorInvalidoException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 400);
+        body.put("error", ex.getMessage());
+        body.put("campos", ex.getCampos());
+        return ResponseEntity.badRequest().body(body);
+    }
+
     // 400: fallan las validaciones del DTO; se listan los campos con error.
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> validacion(MethodArgumentNotValidException ex) {
