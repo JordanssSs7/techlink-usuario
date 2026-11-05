@@ -47,7 +47,7 @@ export default function ElegirCiclo() {
     <div className="login-page">
       <section className="login-panel">
         <div className="login-box">
-          <svg className="login-logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="login-logo" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M3 3h8l-3 9H3z" fill="currentColor" />
             <path d="M13 3h8v9h-5l-3 9H9z" fill="currentColor" />
           </svg>
@@ -79,7 +79,7 @@ export default function ElegirCiclo() {
           </form>
 
           <p className="login-signup">
-            <a href="#salir" onClick={(e) => { e.preventDefault(); logout(); }}>Cerrar sesión</a>
+            <button type="button" className="login-link" onClick={logout}>Cerrar sesión</button>
           </p>
         </div>
       </section>
