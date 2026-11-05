@@ -557,36 +557,34 @@ export default function BuscarMentor() {
                     </ul>
                   </div>
 
-{m.fortalezas?.length > 0 && (
-  <div>
-    <p className="bm-datos-tit">Fortalezas</p>
-    <ul className="bm-chips suave">
-      {m.fortalezas.map((f) => <li key={f}>{f}</li>)}
-    </ul>
-  </div>
-)}
 
-{m.areas?.length > 0 && (
-  <div>
-    <p className="bm-datos-tit">Áreas</p>
-    <ul className="bm-chips suave">
-      {m.areas.map((a) => <li key={a}>{a}</li>)}
-    </ul>
-  </div>
-)}
+                  {m.fortalezas?.length > 0 && (
+                    <div>
+                      <p className="bm-datos-tit">Fortalezas</p>
+                      <ul className="bm-chips suave">
+                        {m.fortalezas.map((f) => <li key={f}>{f}</li>)}
+                      </ul>
+                    </div>
+                  )}
 
-</div>
+                  {m.areas?.length > 0 && (
+                    <div>
+                      <p className="bm-datos-tit">Áreas</p>
+                      <ul className="bm-chips suave">
+                        {m.areas.map((a) => <li key={a}>{a}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                </div>
 
-<div className="bm-acciones">
-  <button
-    type="button"
-    className="bm-primario"
-    onClick={() => setMentorSeleccionado(m)}
-  >
-    Agendar sesión
-  </button>
-</div>
-
+                <div className="bm-acciones">
+                  <button
+                    type="button"
+                    className="bm-primario"
+                    onClick={() => setMentorSeleccionado(m)}
+                  >
+                    Agendar sesión
+                  </button>
                 </div>
               </li>
             ))}
