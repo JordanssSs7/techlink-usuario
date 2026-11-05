@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/authContext';
+import AgendarSesion from './AgendarSesion';
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const HORAS = Array.from({ length: 15 }, (_, i) => i + 7); // 07:00 a 21:00 (bloques de 1 hora)
@@ -39,6 +40,7 @@ export default function BuscarMentor() {
   const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState('');
   const [resultado, setResultado] = useState(null);
+  const [mentorSeleccionado, setMentorSeleccionado] = useState(null);
 
   useEffect(() => {
     let activo = true;
@@ -143,6 +145,17 @@ export default function BuscarMentor() {
 
   if (cargando) return <p className="pt-estado">Cargando…</p>;
 
+  if (mentorSeleccionado) {
+    return (
+      <section className="bm" aria-label="Agendar sesión">
+        <AgendarSesion
+          mentor={mentorSeleccionado}
+          onVolver={() => setMentorSeleccionado(null)}
+        />
+      </section>
+    );
+  }
+  
   return (
     <section className="bm" aria-label="Buscar mentor">
       <ol className="bm-pasos" aria-label="Pasos">
@@ -277,6 +290,15 @@ export default function BuscarMentor() {
                   </div>
                   {m.fortalezas?.length > 0 && <div><dt>Fortalezas</dt><dd>{m.fortalezas.join(', ')}</dd></div>}
                 </dl>
+                <div className="bm-acciones">
+                  <button
+                    type="button"
+                    className="bm-primario"
+                    onClick={() => setMentorSeleccionado(m)}
+                  >
+                    Agendar sesión
+                  </button>
+                </div>
               </li>
             ))}
           </ol>
