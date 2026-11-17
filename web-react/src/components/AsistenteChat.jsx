@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './AsistenteChat.css';
 import { useAuth } from '../auth/authContext';
 import { LLAMA } from './llamaImagenes';
+import AgendarSesion from './AgendarSesion';
 import { callar, escucharFrase, hablar, hayReconocimiento } from './voz';
 
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
@@ -127,7 +128,7 @@ function textoHablado(data) {
   return `${data.respuesta} Te recomiendo a: ${lista}.`;
 }
 
-function ListaMentores({ recomendacion, conIa }) {
+function ListaMentores({ recomendacion, conIa, onAgendar }) {
   if (!recomendacion?.mentores?.length) return null;
   return (
     <>
@@ -143,6 +144,9 @@ function ListaMentores({ recomendacion, conIa }) {
             <p className="ac-mentor-horas">
               {mt.horariosEnComun.map((h) => `${DIAS[h.diaSemana - 1]} ${recortar(h.horaInicio)}–${recortar(h.horaFin)}`).join(' · ')}
             </p>
+            {onAgendar && (
+              <button type="button" className="ac-agendar-btn" onClick={() => onAgendar(mt)}>Agendar sesión</button>
+            )}
           </li>
         ))}
       </ol>
@@ -175,6 +179,7 @@ export default function AsistenteChat() {
   const [enviando, setEnviando] = useState(false);
   const [dictando, setDictando] = useState(false);
   const [voz, setVoz] = useState(null); // null = modo voz apagado
+  const [agendando, setAgendando] = useState(null); // mentor con el que se está agendando una sesión (HU-07)
   const [porBorrar, setPorBorrar] = useState(null); // id de la conversación que se pide confirmar
   const [menuChat, setMenuChat] = useState(null); // id del chat con el menú ⋯ abierto
   const [editando, setEditando] = useState(null); // { id, texto } mientras se renombra un chat
@@ -280,6 +285,7 @@ export default function AsistenteChat() {
 
   const nuevoChat = () => {
     terminarVoz();
+    setAgendando(null);
     setActivaId(null);
     setTexto('');
     if (!grande || window.innerWidth <= 820) setListaAbierta(false);
@@ -287,6 +293,7 @@ export default function AsistenteChat() {
 
   const abrirChat = (id) => {
     terminarVoz();
+    setAgendando(null);
     setActivaId(id);
     // En el panel pequeño (o en celular) la lista tapa el chat, así que se cierra; en grande queda abierta.
     if (!grande || window.innerWidth <= 820) setListaAbierta(false);
@@ -369,6 +376,14 @@ export default function AsistenteChat() {
     terminarVoz();
     setChats((lista) => lista.filter((c) => c.id !== id));
     if (activaId === id) setActivaId(null);
+  };
+
+  // HU-07: abre el agendamiento de Ramses con el mentor elegido, dentro del mismo chat.
+  const agendarCon = (mentor) => {
+    terminarVoz();
+    cancelarDictado.current();
+    setDictando(false);
+    setAgendando(mentor);
   };
 
   const alternarTamano = () => {
@@ -692,6 +707,12 @@ export default function AsistenteChat() {
                 </button>
               </header>
 
+              {agendando ? (
+                <div className="ac-agendar">
+                  <AgendarSesion mentor={agendando} onVolver={() => setAgendando(null)} />
+                </div>
+              ) : (
+                <>
               <div className="ac-mensajes" aria-live="polite">
                 {mensajes.length === 0 && !enviando && (
                   <div className="ac-bienvenida">
@@ -710,7 +731,7 @@ export default function AsistenteChat() {
                     {m.rol === 'agente' && <img className="ac-fila-avatar" src={m.error ? LLAMA.duda : LLAMA.avatar} alt="" />}
                     <div className="ac-fila-cuerpo">
                       <p className={`ac-burbuja${m.error ? ' error' : ''}`}>{m.texto}</p>
-                      <ListaMentores recomendacion={m.recomendacion} conIa={m.conIa} />
+                      <ListaMentores recomendacion={m.recomendacion} conIa={m.conIa} onAgendar={agendarCon} />
                     </div>
                   </div>
                 ))}
@@ -749,6 +770,8 @@ export default function AsistenteChat() {
                   </button>
                 )}
               </form>
+                </>
+              )}
 
               {voz && (
                 <div className="ac-voz" role="region" aria-label="Conversación por voz">
@@ -763,7 +786,7 @@ export default function AsistenteChat() {
                       {mensajes.slice(-4).map((m, i) => (
                         <div key={i} className={`ac-voz-linea ${m.rol}`}>
                           <p>{m.texto}</p>
-                          <ListaMentores recomendacion={m.recomendacion} conIa={m.conIa} />
+                          <ListaMentores recomendacion={m.recomendacion} conIa={m.conIa} onAgendar={agendarCon} />
                         </div>
                       ))}
                       {voz.estado === 'escuchando' && (

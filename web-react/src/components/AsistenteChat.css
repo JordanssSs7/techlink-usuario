@@ -311,3 +311,10 @@
 .ac-voz-botones { flex-shrink: 0; margin-top: 0.2rem; }
 .ac-ventana.compacto .ac-voz-cara { width: 130px; height: 130px; }
 .ac-ventana.compacto .ac-voz-cara img { width: 112px; max-height: 112px; }
+
+/* Agendar sesión (HU-07) dentro del chat */
+.ac-agendar { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem 1.5rem; }
+.ac-ventana.compacto .ac-agendar { padding: 1rem; }
+.ac-agendar .bm-panel { margin: 0; }
+.ac-agendar-btn { margin-top: 0.7rem; padding: 0.55rem 1rem; font-size: 13px; font-weight: 700; color: #000; background: #FBF9E4; border: 0; border-radius: 999px; cursor: pointer; }
+.ac-agendar-btn:hover { background: #5B88B2; }
