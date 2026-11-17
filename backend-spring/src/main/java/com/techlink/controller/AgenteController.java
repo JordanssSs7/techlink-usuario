@@ -1,7 +1,10 @@
 package com.techlink.controller;
 
+import com.techlink.dto.ChatRequest;
+import com.techlink.dto.ChatResponse;
 import com.techlink.dto.RecomendacionRequest;
 import com.techlink.dto.RecomendacionResponse;
+import com.techlink.service.AgenteChatService;
 import com.techlink.service.AgenteRecomendacionService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +22,19 @@ public class AgenteController {
 
     private final AgenteRecomendacionService agenteService;
 
-    public AgenteController(AgenteRecomendacionService agenteService) {
+    private final AgenteChatService chatService;
+
+    public AgenteController(AgenteRecomendacionService agenteService, AgenteChatService chatService) {
         this.agenteService = agenteService;
+        this.chatService = chatService;
+    }
+
+    // POST /api/agente/chat: un turno de la conversacion. Devuelve la respuesta del agente y, cuando ya entendio los
+    // cursos y el horario, tambien la recomendacion de mentores.
+    @PostMapping("/chat")
+    public ResponseEntity<ChatResponse> conversar(@AuthenticationPrincipal Jwt jwt,
+                                                  @Valid @RequestBody ChatRequest request) {
+        return ResponseEntity.ok(chatService.conversar(Integer.valueOf(jwt.getSubject()), request));
     }
 
     // POST /api/agente/recomendaciones: recibe cursos, horario y una nota opcional; devuelve hasta 3 mentores con su %.
