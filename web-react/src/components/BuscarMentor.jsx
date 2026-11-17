@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../auth/authContext';
+import AgendarSesion from './AgendarSesion';
 import { CATEGORIAS, categoriaDe } from './cursosCategorias';
 import IconoCategoria from './IconoCategoria';
 
@@ -73,6 +74,7 @@ export default function BuscarMentor() {
   const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState('');
   const [resultado, setResultado] = useState(null);
+  const [mentorSeleccionado, setMentorSeleccionado] = useState(null);
   const [bordes, setBordes] = useState({ arriba: false, abajo: false });
   const listaRef = useRef(null);
   const arrastre = useRef(null);
@@ -257,6 +259,17 @@ export default function BuscarMentor() {
     );
   }
 
+  if (mentorSeleccionado) {
+    return (
+      <section className="bm" aria-label="Agendar sesión">
+        <AgendarSesion
+          mentor={mentorSeleccionado}
+          onVolver={() => setMentorSeleccionado(null)}
+        />
+      </section>
+    );
+  }
+  
   return (
     <section className="bm" aria-label="Buscar mentor">
       <ol className="bm-pasos" aria-label="Pasos" style={{ '--avance': (paso - 1) / 2 }}>
@@ -543,18 +556,35 @@ export default function BuscarMentor() {
                       ))}
                     </ul>
                   </div>
+
+
                   {m.fortalezas?.length > 0 && (
                     <div>
                       <p className="bm-datos-tit">Fortalezas</p>
-                      <ul className="bm-chips suave">{m.fortalezas.map((f) => <li key={f}>{f}</li>)}</ul>
+                      <ul className="bm-chips suave">
+                        {m.fortalezas.map((f) => <li key={f}>{f}</li>)}
+                      </ul>
                     </div>
                   )}
+
                   {m.areas?.length > 0 && (
                     <div>
                       <p className="bm-datos-tit">Áreas</p>
-                      <ul className="bm-chips suave">{m.areas.map((a) => <li key={a}>{a}</li>)}</ul>
+                      <ul className="bm-chips suave">
+                        {m.areas.map((a) => <li key={a}>{a}</li>)}
+                      </ul>
                     </div>
                   )}
+                </div>
+
+                <div className="bm-acciones">
+                  <button
+                    type="button"
+                    className="bm-primario"
+                    onClick={() => setMentorSeleccionado(m)}
+                  >
+                    Agendar sesión
+                  </button>
                 </div>
               </li>
             ))}
