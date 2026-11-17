@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import './PortalEstudiante.css';
 import { useAuth } from '../auth/authContext';
 import BuscarMentor from './BuscarMentor';
+import AsistenteChat from './AsistenteChat';
 import imgMentoria from '../assets/buscar-mentor.webp';
 
 const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
@@ -180,6 +181,8 @@ export default function PortalEstudiante() {
         <p className="pt-footer-copy">© {new Date().getFullYear()} TechLink · Mentorías Tecsup</p>
       </footer>
       </div>
+
+      <AsistenteChat />
     </div>
   );
 }
