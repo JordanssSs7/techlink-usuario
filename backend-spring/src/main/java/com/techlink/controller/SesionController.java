@@ -3,7 +3,9 @@ package com.techlink.controller;
 
 import com.techlink.dto.SesionResponse;
 import com.techlink.model.Sesion;
+import com.techlink.service.SesionCicloService;
 import com.techlink.service.SesionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.techlink.dto.AgendarSesionRequest;
 
 import org.springframework.http.HttpStatus;
@@ -28,8 +30,17 @@ public class SesionController {
 
     private final SesionService sesionService;
 
+    // HU-20: guarda el curso elegido al agendar. Es null en las pruebas que no lo necesitan.
+    private final SesionCicloService cicloService;
+
     public SesionController(SesionService sesionService) {
+        this(sesionService, null);
+    }
+
+    @Autowired
+    public SesionController(SesionService sesionService, SesionCicloService cicloService) {
         this.sesionService = sesionService;
+        this.cicloService = cicloService;
     }
 
 
@@ -70,6 +81,11 @@ public class SesionController {
                     : HttpStatus.BAD_REQUEST;
 
             throw new ResponseStatusException(estado, e.getMessage(), e);
+        }
+
+        // HU-20: guardar el curso que se quiere reforzar, si el estudiante lo indicó.
+        if (cicloService != null) {
+            cicloService.asignarCurso(sesion.getId(), request.getCursoId());
         }
 
         // Convertir la entidad en un DTO de respuesta.

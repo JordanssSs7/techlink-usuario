@@ -15,6 +15,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,6 +42,13 @@ public class Mentor {
 
     @Column(columnDefinition = "TEXT")
     private String biografia;
+
+    // HU-09: promedio de estrellas que recibió el mentor y cuántas calificaciones lo forman (se recalcula al calificar).
+    @Column(nullable = false, precision = 3, scale = 2)
+    private BigDecimal reputacion = BigDecimal.ZERO;
+
+    @Column(name = "total_calificaciones", nullable = false)
+    private Integer totalCalificaciones = 0;
 
     // Cursos que domina (tabla intermedia mentor_cursos).
     @ManyToMany
@@ -76,6 +84,12 @@ public class Mentor {
     public void setEspecialidad(String especialidad) { this.especialidad = especialidad; }
 
     public String getBiografia() { return biografia; }
+
+    public BigDecimal getReputacion() { return reputacion; }
+    public void setReputacion(BigDecimal reputacion) { this.reputacion = reputacion; }
+
+    public Integer getTotalCalificaciones() { return totalCalificaciones; }
+    public void setTotalCalificaciones(Integer totalCalificaciones) { this.totalCalificaciones = totalCalificaciones; }
     public void setBiografia(String biografia) { this.biografia = biografia; }
 
     public Set<Curso> getCursos() { return cursos; }

@@ -7,6 +7,7 @@ import com.techlink.exception.CredencialesInvalidasException;
 import com.techlink.exception.CuentaBloqueadaException;
 import com.techlink.exception.CuentaInactivaException;
 import com.techlink.model.EstadoUsuario;
+import com.techlink.model.ProveedorUsuario;
 import com.techlink.model.Rol;
 import com.techlink.model.Usuario;
 import com.techlink.repository.EstudianteRepository;
@@ -90,6 +91,46 @@ class AuthServiceLoginTest {
 
         assertEquals("Usa Google para ingresar", error.getMessage());
         assertEquals(0, usuario.getIntentosFallidos());
+    }
+
+    // Una cuenta LOCAL de prueba (estudiante) entra con contraseña solo si CUENTAS_PRUEBA está activado.
+    private AuthService servicioConPruebasActivadas() {
+        return new AuthService(usuarioRepository, Mockito.mock(EstudianteRepository.class),
+                Mockito.mock(RolRepository.class), new BCryptPasswordEncoder(), jwtService,
+                Mockito.mock(GoogleTokenVerifier.class), true);
+    }
+
+    @Test
+    void conCuentasDePruebaActivadasUnEstudianteLocalEntraConContrasena() {
+        Rol estudiante = new Rol();
+        estudiante.setNombre("ESTUDIANTE");
+        usuario.setRol(estudiante);
+
+        LoginResponse respuesta = servicioConPruebasActivadas().login(new LoginRequest(CORREO, PASSWORD));
+
+        assertEquals("token-de-prueba", respuesta.token());
+    }
+
+    @Test
+    void conCuentasDePruebaActivadasUnaCuentaDeGoogleSigueEntrandoSoloConGoogle() {
+        Rol estudiante = new Rol();
+        estudiante.setNombre("ESTUDIANTE");
+        usuario.setRol(estudiante);
+        usuario.setProveedor(ProveedorUsuario.GOOGLE);
+
+        assertThrows(AccesoSoloConGoogleException.class,
+                () -> servicioConPruebasActivadas().login(new LoginRequest(CORREO, PASSWORD)));
+    }
+
+    @Test
+    void conCuentasDePruebaActivadasUnaContrasenaMalaSigueContandoIntentos() {
+        Rol estudiante = new Rol();
+        estudiante.setNombre("ESTUDIANTE");
+        usuario.setRol(estudiante);
+
+        assertThrows(CredencialesInvalidasException.class,
+                () -> servicioConPruebasActivadas().login(new LoginRequest(CORREO, "incorrecta1")));
+        assertEquals(1, usuario.getIntentosFallidos());
     }
 
     @Test

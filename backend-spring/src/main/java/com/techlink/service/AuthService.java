@@ -42,14 +42,31 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final GoogleTokenVerifier googleTokenVerifier;
+    // Solo para desarrollo: con CUENTAS_PRUEBA=true, las cuentas LOCAL de un estudiante o mentor (que solo se crean
+    // a mano en la base de datos) pueden entrar con contraseña. Apagado por defecto: en el sistema real todos
+    // los alumnos y mentores entran solo con Google.
+    private final boolean cuentasDePrueba;
 
-    // Spring inyecta automaticamente las dependencias por constructor.
     public AuthService(UsuarioRepository usuarioRepository,
                        EstudianteRepository estudianteRepository,
                        RolRepository rolRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        GoogleTokenVerifier googleTokenVerifier) {
+        this(usuarioRepository, estudianteRepository, rolRepository, passwordEncoder, jwtService,
+                googleTokenVerifier, false);
+    }
+
+    // Spring inyecta automaticamente las dependencias por constructor.
+    @org.springframework.beans.factory.annotation.Autowired
+    public AuthService(UsuarioRepository usuarioRepository,
+                       EstudianteRepository estudianteRepository,
+                       RolRepository rolRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService,
+                       GoogleTokenVerifier googleTokenVerifier,
+                       @org.springframework.beans.factory.annotation.Value("${app.auth.cuentas-de-prueba:false}") boolean cuentasDePrueba) {
+        this.cuentasDePrueba = cuentasDePrueba;
         this.usuarioRepository = usuarioRepository;
         this.estudianteRepository = estudianteRepository;
         this.rolRepository = rolRepository;
@@ -77,7 +94,9 @@ public class AuthService {
         }
 
         // 1.2 Alumnos y mentores entran solo con Google: el correo y contraseña es solo para administradores (403).
-        if (!ROL_ADMIN.equals(usuario.getRol().getNombre())) {
+        //     Excepción de desarrollo: una cuenta LOCAL de prueba, si CUENTAS_PRUEBA está activado.
+        boolean cuentaDePrueba = cuentasDePrueba && usuario.getProveedor() == ProveedorUsuario.LOCAL;
+        if (!ROL_ADMIN.equals(usuario.getRol().getNombre()) && !cuentaDePrueba) {
             throw new AccesoSoloConGoogleException("Usa Google para ingresar");
         }
 

@@ -16,6 +16,9 @@ public class AgendarSesionRequest {
 
     private String enlaceReunion;
 
+    // HU-20: curso que el estudiante quiere reforzar (opcional).
+    private Integer cursoId;
+
     public AgendarSesionRequest() {
     }
 
@@ -57,6 +60,14 @@ public class AgendarSesionRequest {
 
     public void setHoraFin(LocalTime horaFin) {
         this.horaFin = horaFin;
+    }
+
+    public Integer getCursoId() {
+        return cursoId;
+    }
+
+    public void setCursoId(Integer cursoId) {
+        this.cursoId = cursoId;
     }
 
     public String getEnlaceReunion() {

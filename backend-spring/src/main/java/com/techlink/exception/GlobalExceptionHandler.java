@@ -20,6 +20,12 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.CONFLICT, "La cuenta ya existe. Inténtalo de nuevo");
     }
 
+    // HU-09, HU-19, HU-20 y HU-21: la regla de la sesión que no se cumplió, con su código HTTP.
+    @ExceptionHandler(SesionException.class)
+    public ResponseEntity<Map<String, Object>> sesion(SesionException ex) {
+        return error(ex.getEstado(), ex.getMessage());
+    }
+
     // HU-02 - 401: correo o contraseña incorrectos en el login.
     @ExceptionHandler(CredencialesInvalidasException.class)
     public ResponseEntity<Map<String, Object>> credencialesInvalidas(CredencialesInvalidasException ex) {

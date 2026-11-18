@@ -27,6 +27,11 @@ public class Sesion {
     @JoinColumn(name = "id_disponibilidad", nullable = false)
     private MentorDisponibilidad disponibilidad;
 
+    // HU-20: curso que el estudiante quiere reforzar en esta sesión (opcional).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_curso")
+    private Curso curso;
+
     @Column(nullable = false)
     private LocalDate fecha;
 
@@ -67,6 +72,9 @@ public class Sesion {
     public void setDisponibilidad(MentorDisponibilidad disponibilidad) {
         this.disponibilidad = disponibilidad;
     }
+
+    public Curso getCurso() { return curso; }
+    public void setCurso(Curso curso) { this.curso = curso; }
 
     public LocalDate getFecha() { return fecha; }
     public void setFecha(LocalDate fecha) { this.fecha = fecha; }

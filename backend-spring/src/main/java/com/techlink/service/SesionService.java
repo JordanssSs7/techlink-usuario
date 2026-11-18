@@ -77,7 +77,7 @@ public class SesionService {
 
 
     // Validar que la fecha y las horas sean correctas
-    private void validarFechaYHorario(
+    void validarFechaYHorario(
             LocalDate fecha,
             LocalTime horaInicio,
             LocalTime horaFin
@@ -240,7 +240,7 @@ public class SesionService {
     }
 
     // Validar que el mentor esté disponible
-    private void validarDisponibilidadMentor(
+    void validarDisponibilidadMentor(
             MentorDisponibilidad disponibilidad,
             Integer mentorId,
             LocalDate fecha,
@@ -283,7 +283,7 @@ public class SesionService {
     }
 
     // Validar que no existan sesiones superpuestas
-    private void validarHorarioDisponible(
+    void validarHorarioDisponible(
             Integer mentorId,
             LocalDate fecha,
             LocalTime horaInicio,
