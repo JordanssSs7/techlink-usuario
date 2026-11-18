@@ -50,8 +50,14 @@ function generarBloques(disponibilidades, fecha) {
   return bloques;
 }
 
-export default function AgendarSesion({ mentor, onVolver }) {
+// HU-07: agendar una sesión. HU-19: con "reprogramar" (una sesión del historial) mueve esa sesión a otro horario
+// del mismo mentor en lugar de crear una nueva. HU-20: al agendar se puede elegir el curso a reforzar.
+export default function AgendarSesion({ mentor, onVolver, reprogramar = null, onConfirmado }) {
   const { authFetch } = useAuth();
+  const reprogramando = Boolean(reprogramar);
+
+  const [cursos, setCursos] = useState([]);
+  const [cursoId, setCursoId] = useState('');
 
   const [disponibilidades, setDisponibilidades] = useState([]);
   const [fecha, setFecha] = useState('');
@@ -93,6 +99,26 @@ export default function AgendarSesion({ mentor, onVolver }) {
     };
   }, [authFetch, mentor.idMentor]);
 
+  // Cursos para elegir: los que el estudiante y el mentor tienen en común (si se conocen) o todo el catálogo.
+  useEffect(() => {
+    if (reprogramando) return undefined;
+    let activo = true;
+    (async () => {
+      try {
+        const respuesta = await authFetch('/api/cursos');
+        if (!respuesta.ok) return;
+        const catalogo = await respuesta.json();
+        const comunes = mentor.cursosEnComun;
+        const lista = comunes?.length ? catalogo.filter((c) => comunes.includes(c.nombre)) : catalogo;
+        if (activo) {
+          setCursos(lista);
+          if (lista.length === 1) setCursoId(String(lista[0].id));
+        }
+      } catch { /* el curso es opcional: sin lista se agenda igual */ }
+    })();
+    return () => { activo = false; };
+  }, [authFetch, mentor.cursosEnComun, reprogramando]);
+
   const bloques = generarBloques(disponibilidades, fecha);
 
   async function confirmarReserva() {
@@ -105,34 +131,50 @@ export default function AgendarSesion({ mentor, onVolver }) {
     setGuardando(true);
 
     try {
-      const respuesta = await authFetch('/api/sesiones', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          mentorId: mentor.idMentor,
-          disponibilidadId: bloqueSeleccionado.idDisponibilidad,
-          fecha,
-          horaInicio: bloqueSeleccionado.horaInicio,
-          horaFin: bloqueSeleccionado.horaFin,
-          enlaceReunion: 'https://meet.google.com/ere-qoah-awr'
-        })
-      });
+      const respuesta = await authFetch(
+        reprogramando ? `/api/sesiones/${reprogramar.id}/reprogramar` : '/api/sesiones',
+        {
+          method: reprogramando ? 'PATCH' : 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(reprogramando
+            ? {
+              disponibilidadId: bloqueSeleccionado.idDisponibilidad,
+              fecha,
+              horaInicio: bloqueSeleccionado.horaInicio,
+              horaFin: bloqueSeleccionado.horaFin
+            }
+            : {
+              mentorId: mentor.idMentor,
+              disponibilidadId: bloqueSeleccionado.idDisponibilidad,
+              fecha,
+              horaInicio: bloqueSeleccionado.horaInicio,
+              horaFin: bloqueSeleccionado.horaFin,
+              cursoId: cursoId ? Number(cursoId) : null,
+              enlaceReunion: 'https://meet.google.com/ere-qoah-awr'
+            })
+        }
+      );
 
       if (respuesta.status === 409) {
-        setError('Ese horario ya está reservado. Selecciona otro.');
+        const datos = await respuesta.json().catch(() => ({}));
+        setError(datos.error || 'Ese horario ya está reservado. Selecciona otro.');
         setBloqueSeleccionado(null);
         return;
       }
 
       if (!respuesta.ok) {
-        setError('No se pudo registrar la sesión. Revisa los datos.');
+        const datos = await respuesta.json().catch(() => ({}));
+        setError(datos.error || (reprogramando
+          ? 'No se pudo reprogramar la sesión. Revisa los datos.'
+          : 'No se pudo registrar la sesión. Revisa los datos.'));
         return;
       }
 
       const datos = await respuesta.json();
       setConfirmacion(datos);
+      onConfirmado?.(datos);
     } catch {
       setError('No se pudo conectar con el servidor.');
     } finally {
@@ -143,8 +185,8 @@ export default function AgendarSesion({ mentor, onVolver }) {
   if (confirmacion) {
     return (
       <section className="bm-panel">
-        <h2>¡Sesión confirmada!</h2>
-        <p>Tu mentoría se registró correctamente.</p>
+        <h2>{reprogramando ? '¡Sesión reprogramada!' : '¡Sesión confirmada!'}</h2>
+        <p>{reprogramando ? 'Tu mentoría cambió de horario y avisamos al mentor.' : 'Tu mentoría se registró correctamente.'}</p>
 
         <p><strong>Mentor:</strong> {mentor.nombres} {mentor.apellidos}</p>
         <p><strong>Fecha:</strong> {confirmacion.fecha}</p>
@@ -162,7 +204,7 @@ export default function AgendarSesion({ mentor, onVolver }) {
           className="bm-primario"
           onClick={onVolver}
         >
-          Volver a los mentores
+          {reprogramando ? 'Volver a mis sesiones' : 'Volver a los mentores'}
         </button>
       </section>
     );
@@ -170,14 +212,16 @@ export default function AgendarSesion({ mentor, onVolver }) {
 
   return (
     <section className="bm-panel">
-      <h2>Agendar sesión</h2>
+      <h2>{reprogramando ? 'Reprogramar sesión' : 'Agendar sesión'}</h2>
 
       <p>
         <strong>Mentor:</strong> {mentor.nombres} {mentor.apellidos}
       </p>
 
       <p className="bm-ayuda">
-        Selecciona una fecha y un horario disponible para tu mentoría.
+        {reprogramando
+          ? 'Elige el nuevo día y horario. Solo se puede cambiar con al menos 2 horas de anticipación.'
+          : 'Selecciona una fecha y un horario disponible para tu mentoría.'}
       </p>
 
       {error && (
@@ -196,6 +240,24 @@ export default function AgendarSesion({ mentor, onVolver }) {
               {horaCorta(d.horaInicio)} – {horaCorta(d.horaFin)}
             </p>
           ))}
+
+          {!reprogramando && cursos.length > 0 && (
+            <>
+              <label className="bm-etiqueta" htmlFor="curso-sesion">
+                Curso que quieres reforzar (opcional)
+              </label>
+              <select
+                id="curso-sesion"
+                value={cursoId}
+                onChange={(e) => setCursoId(e.target.value)}
+              >
+                <option value="">Sin especificar</option>
+                {cursos.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+            </>
+          )}
 
           <label className="bm-etiqueta" htmlFor="fecha-sesion">
             Fecha de la sesión
@@ -266,7 +328,7 @@ export default function AgendarSesion({ mentor, onVolver }) {
               onClick={confirmarReserva}
               disabled={!bloqueSeleccionado || guardando}
             >
-              {guardando ? 'Confirmando...' : 'Confirmar reserva'}
+              {guardando ? 'Confirmando...' : (reprogramando ? 'Confirmar cambio' : 'Confirmar reserva')}
             </button>
           </div>
         </>

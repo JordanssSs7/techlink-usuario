@@ -1,0 +1,22 @@
+/* Sitio del mentor: barra superior azul marino con sus secciones. */
+.pm { min-height: 100vh; background: #fff; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+.pm-barra { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 1.5rem; padding: 0.8rem clamp(1rem, 4vw, 3rem); color: #fff; background: linear-gradient(90deg, #122C4F, #0a1a30); }
+.pm-marca { display: flex; align-items: center; gap: 0.5rem; font-size: 18px; font-weight: 700; }
+.pm-nav { display: flex; gap: 0.4rem; margin-right: auto; }
+.pm-enlace { padding: 0.5rem 1rem; font: inherit; font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.75); background: transparent; border: 0; border-radius: 999px; cursor: pointer; }
+.pm-enlace:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.pm-enlace.activo { color: #122C4F; background: #fff; }
+.pm-salir { padding: 0.5rem 1.1rem; font: inherit; font-size: 13px; font-weight: 600; color: #fff; background: transparent; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 999px; cursor: pointer; }
+.pm-salir:hover { color: #122C4F; background: #fff; }
+.pm :focus-visible { outline: 2px solid #5B88B2; outline-offset: 2px; }
+
+.pm-contenido { max-width: 860px; margin: 0 auto; padding: clamp(1.5rem, 4vw, 3rem) 1rem 4rem; box-sizing: border-box; }
+.pm-eyebrow { margin: 0 0 0.5rem; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B88B2; }
+.pm-contenido h1 { margin: 0 0 0.5rem; font-size: clamp(28px, 5vw, 38px); letter-spacing: -0.02em; color: #122C4F; }
+.pm-intro { margin: 0 0 1.75rem; color: #5f6673; line-height: 1.5; }
+
+@media (max-width: 640px) {
+  .pm-barra { flex-wrap: wrap; gap: 0.6rem; }
+  .pm-nav { order: 3; width: 100%; margin-right: 0; }
+  .pm-salir { margin-left: auto; }
+}

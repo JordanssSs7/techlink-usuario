@@ -1,7 +1,7 @@
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import ElegirCiclo from './components/ElegirCiclo';
-import PerfilMentor from './components/PerfilMentor';
+import PortalMentor from './components/PortalMentor';
 import PortalEstudiante from './components/PortalEstudiante';
 import { useAuth } from './auth/authContext';
 
@@ -14,7 +14,7 @@ function App() {
 
   let pantalla = <LoginForm />;
   if (estaAutenticado) {
-    if (usuario.rol === 'MENTOR') pantalla = <PerfilMentor />;
+    if (usuario.rol === 'MENTOR') pantalla = <PortalMentor />;
     else pantalla = faltaCiclo ? <ElegirCiclo /> : usuario.rol === 'ESTUDIANTE' ? <PortalEstudiante /> : <Dashboard />;
   }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import './PortalEstudiante.css';
 import { useAuth } from '../auth/authContext';
 import BuscarMentor from './BuscarMentor';
+import MisSesiones from './MisSesiones';
 import AsistenteChat from './AsistenteChat';
 import imgMentoria from '../assets/buscar-mentor.webp';
 
@@ -19,6 +20,11 @@ const SECCIONES = [
     id: 'buscar',
     titulo: 'Buscar mentor',
     icono: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>
+  },
+  {
+    id: 'sesiones',
+    titulo: 'Mis sesiones',
+    icono: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17" /></>
   }
 ];
 
@@ -144,6 +150,14 @@ export default function PortalEstudiante() {
               <p className="pt-eyebrow">Mentorías</p>
               <h1>Buscar mentor</h1>
               <BuscarMentor />
+            </section>
+          )}
+          {seccion === 'sesiones' && (
+            <section key="sesiones" className="pt-seccion">
+              <p className="pt-eyebrow">Mentorías</p>
+              <h1>Mis sesiones</h1>
+              <p className="pt-intro">Tu historial de sesiones: califica las que terminaron, y cancela o reprograma las próximas.</p>
+              <MisSesiones />
             </section>
           )}
         </div>
