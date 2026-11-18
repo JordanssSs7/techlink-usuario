@@ -51,10 +51,12 @@ export default function AuthProvider({ children }) {
 
   // fetch con el token. Si el backend responde 401 (token vencido o inválido), cierra la sesión.
   const authFetch = useCallback(async (ruta, opciones = {}) => {
+    // Con un formulario con archivos (FormData) el navegador pone solo el tipo de contenido correcto.
+    const esFormData = typeof FormData !== 'undefined' && opciones.body instanceof FormData;
     const response = await fetch(`${API_URL}${ruta}`, {
       ...opciones,
       headers: {
-        'Content-Type': 'application/json',
+        ...(esFormData ? {} : { 'Content-Type': 'application/json' }),
         ...opciones.headers,
         ...(sesion?.token ? { Authorization: `Bearer ${sesion.token}` } : {})
       }

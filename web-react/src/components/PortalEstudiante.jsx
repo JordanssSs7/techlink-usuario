@@ -3,6 +3,11 @@ import './PortalEstudiante.css';
 import { useAuth } from '../auth/authContext';
 import BuscarMentor from './BuscarMentor';
 import MisSesiones from './MisSesiones';
+import MentoresRanking from './MentoresRanking';
+import MiCuenta from './MiCuenta';
+import PostularMentor from './PostularMentor';
+import Avatar from './Avatar';
+import { useFotoPropia } from './fotoPerfil';
 import AsistenteChat from './AsistenteChat';
 import imgMentoria from '../assets/buscar-mentor.webp';
 
@@ -25,6 +30,21 @@ const SECCIONES = [
     id: 'sesiones',
     titulo: 'Mis sesiones',
     icono: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17" /></>
+  },
+  {
+    id: 'mentores',
+    titulo: 'Mentores',
+    icono: <><path d="M8 21h8M12 17v4" /><path d="M7 4h10v4a5 5 0 0 1-10 0z" /><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" /></>
+  },
+  {
+    id: 'postular',
+    titulo: 'Ser mentor',
+    icono: <><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" /></>
+  },
+  {
+    id: 'cuenta',
+    titulo: 'Mi cuenta',
+    icono: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>
   }
 ];
 
@@ -41,6 +61,7 @@ function Logo({ size = 26 }) {
 // En pantallas pequeñas la barra lateral se vuelve un menú que se abre con el botón ☰.
 export default function PortalEstudiante() {
   const { usuario, logout } = useAuth();
+  const fotoPropia = useFotoPropia();
   const [seccion, setSeccion] = useState('inicio');
   const [menuAbierto, setMenuAbierto] = useState(false);
 
@@ -106,7 +127,8 @@ export default function PortalEstudiante() {
 
         <div className="pt-usuario">
           <div className="pt-usuario-fila">
-            <span className="pt-avatar" aria-hidden="true">{iniciales}</span>
+            <Avatar className="pt-avatar" idUsuario={fotoPropia.idUsuario} tieneFoto={fotoPropia.tieneFoto}
+              version={fotoPropia.version} iniciales={iniciales} tamano={40} />
             <div className="pt-usuario-txt">
               <p className="pt-usuario-nombre">{nombreCompleto}</p>
               <p className="pt-usuario-dato">{ciclo || usuario.correoInstitucional}</p>
@@ -150,6 +172,30 @@ export default function PortalEstudiante() {
               <p className="pt-eyebrow">Mentorías</p>
               <h1>Buscar mentor</h1>
               <BuscarMentor />
+            </section>
+          )}
+          {seccion === 'mentores' && (
+            <section key="mentores" className="pt-seccion">
+              <p className="pt-eyebrow">Comunidad</p>
+              <h1>Mentores</h1>
+              <p className="pt-intro">El ranking de mentores por calificación y horas dictadas. Abre un perfil para ver sus cursos, comentarios e insignias.</p>
+              <MentoresRanking />
+            </section>
+          )}
+          {seccion === 'postular' && (
+            <section key="postular" className="pt-seccion">
+              <p className="pt-eyebrow">Acreditación</p>
+              <h1>Ser mentor</h1>
+              <p className="pt-intro">Si ya llevas varios ciclos, puedes postular para guiar a otros alumnos.</p>
+              <PostularMentor />
+            </section>
+          )}
+          {seccion === 'cuenta' && (
+            <section key="cuenta" className="pt-seccion">
+              <p className="pt-eyebrow">Tu perfil</p>
+              <h1>Mi cuenta</h1>
+              <p className="pt-intro">Así te ven los demás. Cuéntales quién eres y qué te interesa.</p>
+              <MiCuenta />
             </section>
           )}
           {seccion === 'sesiones' && (

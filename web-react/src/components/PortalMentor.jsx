@@ -3,9 +3,11 @@ import './PortalMentor.css';
 import { useAuth } from '../auth/authContext';
 import PerfilMentor from './PerfilMentor';
 import MisSesiones from './MisSesiones';
+import MiCuenta from './MiCuenta';
 
 const SECCIONES = [
   { id: 'perfil', titulo: 'Mi perfil' },
+  { id: 'cuenta', titulo: 'Mis datos' },
   { id: 'sesiones', titulo: 'Mis sesiones' }
 ];
 
@@ -41,6 +43,14 @@ export default function PortalMentor() {
       </header>
 
       {seccion === 'perfil' && <PerfilMentor />}
+      {seccion === 'cuenta' && (
+        <main className="pm-contenido">
+          <p className="pm-eyebrow">Tu perfil</p>
+          <h1>Mis datos</h1>
+          <p className="pm-intro">Tu foto y tu descripción se ven en tu perfil público de mentor.</p>
+          <MiCuenta />
+        </main>
+      )}
       {seccion === 'sesiones' && (
         <main className="pm-contenido">
           <p className="pm-eyebrow">Mentorías</p>
