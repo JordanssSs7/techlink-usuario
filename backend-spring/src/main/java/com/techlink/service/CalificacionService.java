@@ -9,6 +9,7 @@ import com.techlink.repository.CalificacionRepository;
 import com.techlink.repository.MentorRepository;
 import com.techlink.repository.SesionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,23 +29,27 @@ public class CalificacionService {
     private final SesionRepository sesionRepository;
     private final CalificacionRepository calificacionRepository;
     private final MentorRepository mentorRepository;
+    private final ApplicationEventPublisher eventos;
     private final Clock reloj;
 
     @Autowired
     public CalificacionService(SesionRepository sesionRepository,
                                CalificacionRepository calificacionRepository,
-                               MentorRepository mentorRepository) {
-        this(sesionRepository, calificacionRepository, mentorRepository, Clock.systemDefaultZone());
+                               MentorRepository mentorRepository,
+                               ApplicationEventPublisher eventos) {
+        this(sesionRepository, calificacionRepository, mentorRepository, eventos, Clock.systemDefaultZone());
     }
 
     // El reloj se puede cambiar solo en las pruebas automaticas.
     CalificacionService(SesionRepository sesionRepository,
                         CalificacionRepository calificacionRepository,
                         MentorRepository mentorRepository,
+                        ApplicationEventPublisher eventos,
                         Clock reloj) {
         this.sesionRepository = sesionRepository;
         this.calificacionRepository = calificacionRepository;
         this.mentorRepository = mentorRepository;
+        this.eventos = eventos;
         this.reloj = reloj;
     }
 
@@ -80,6 +85,8 @@ public class CalificacionService {
         calificacionRepository.save(calificacion);
 
         Mentor mentor = recalcularReputacion(sesion.getMentor());
+        // HU-15: con la nueva calificación el mentor puede haber ganado una insignia.
+        eventos.publishEvent(new InsigniaProgramador.CalificacionRegistrada(mentor.getId()));
         return new CalificacionResponse(estrellas, calificacion.getComentario(),
                 mentor.getReputacion(), mentor.getTotalCalificaciones());
     }

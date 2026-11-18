@@ -20,6 +20,38 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.CONFLICT, "La cuenta ya existe. Inténtalo de nuevo");
     }
 
+    // HU-03, HU-13, HU-14 y HU-15: la regla del negocio que no se cumplió, con su código HTTP.
+    @ExceptionHandler(ReglaNegocioException.class)
+    public ResponseEntity<Map<String, Object>> reglaNegocio(ReglaNegocioException ex) {
+        return error(ex.getEstado(), ex.getMessage());
+    }
+
+    // HU-13 y HU-03 - 400: datos inválidos, con el detalle por campo.
+    @ExceptionHandler(DatosInvalidosException.class)
+    public ResponseEntity<Map<String, Object>> datosInvalidos(DatosInvalidosException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 400);
+        body.put("error", ex.getCampos().values().iterator().next());
+        body.put("campos", ex.getCampos());
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    // 400: falta el archivo en una subida (HU-03 y HU-13).
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    public ResponseEntity<Map<String, Object>> faltaArchivo(org.springframework.web.multipart.support.MissingServletRequestPartException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 400);
+        body.put("error", "Adjunta un archivo.");
+        body.put("campos", Map.of(ex.getRequestPartName(), "Adjunta un archivo."));
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    // 413: el archivo subido supera el límite que acepta el servidor.
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> archivoMuyGrande(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return error(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño máximo permitido.");
+    }
+
     // HU-09, HU-19, HU-20 y HU-21: la regla de la sesión que no se cumplió, con su código HTTP.
     @ExceptionHandler(SesionException.class)
     public ResponseEntity<Map<String, Object>> sesion(SesionException ex) {

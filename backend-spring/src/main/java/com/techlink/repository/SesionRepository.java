@@ -54,6 +54,11 @@ public interface SesionRepository extends JpaRepository<Sesion, Integer> {
             @Param("sesionId") Integer sesionId
     );
 
+    // HU-15: fecha y horas de las sesiones confirmadas de un mentor, para sumar las horas dictadas.
+    @Query("SELECT s.fecha, s.horaInicio, s.horaFin FROM Sesion s WHERE s.mentor.id = :mentorId "
+            + "AND s.estado = com.techlink.model.Sesion.EstadoSesion.CONFIRMADA")
+    List<Object[]> horariosConfirmadosDeMentor(@Param("mentorId") Integer mentorId);
+
     // HU-20: historial del estudiante, de la más reciente a la más antigua.
     @Query("""
         SELECT s FROM Sesion s

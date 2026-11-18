@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
@@ -31,6 +32,7 @@ class CalificacionServiceTest {
     private SesionRepository sesionRepository;
     private CalificacionRepository calificacionRepository;
     private MentorRepository mentorRepository;
+    private ApplicationEventPublisher eventos;
     private CalificacionService servicio;
 
     @BeforeEach
@@ -38,7 +40,8 @@ class CalificacionServiceTest {
         sesionRepository = Mockito.mock(SesionRepository.class);
         calificacionRepository = Mockito.mock(CalificacionRepository.class);
         mentorRepository = Mockito.mock(MentorRepository.class);
-        servicio = new CalificacionService(sesionRepository, calificacionRepository, mentorRepository);
+        eventos = Mockito.mock(ApplicationEventPublisher.class);
+        servicio = new CalificacionService(sesionRepository, calificacionRepository, mentorRepository, eventos);
         when(calificacionRepository.findBySesionId(1)).thenReturn(Optional.empty());
         when(mentorRepository.save(any(Mentor.class))).thenAnswer(i -> i.getArgument(0));
         resumen(4.5, 2L);
@@ -74,6 +77,15 @@ class CalificacionServiceTest {
         assertEquals("Muy clara la explicación", guardada.getValue().getComentario());
         assertEquals(new BigDecimal("4.50"), r.reputacionMentor());
         assertEquals(2, r.totalCalificacionesMentor());
+    }
+
+    @Test
+    void avisaQueHayUnaNuevaCalificacionParaRevisarLasInsignias() {
+        sesion(3, Sesion.EstadoSesion.CONFIRMADA);
+
+        servicio.calificar(USUARIO_ESTUDIANTE, 1, 5, null);
+
+        verify(eventos).publishEvent(new InsigniaProgramador.CalificacionRegistrada(PruebaSesiones.ID_MENTOR));
     }
 
     @Test

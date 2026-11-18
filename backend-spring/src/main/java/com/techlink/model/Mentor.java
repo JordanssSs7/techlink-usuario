@@ -57,6 +57,13 @@ public class Mentor {
             inverseJoinColumns = @JoinColumn(name = "id_curso"))
     private Set<Curso> cursos = new LinkedHashSet<>();
 
+    // HU-15: insignias que ya ganó (tabla intermedia mentor_insignias; la fecha de otorgamiento la pone la base de datos).
+    @ManyToMany
+    @JoinTable(name = "mentor_insignias",
+            joinColumns = @JoinColumn(name = "id_mentor"),
+            inverseJoinColumns = @JoinColumn(name = "id_insignia"))
+    private Set<Insignia> insignias = new LinkedHashSet<>();
+
     @ElementCollection
     @CollectionTable(name = "mentor_fortalezas", joinColumns = @JoinColumn(name = "id_mentor"))
     @Column(name = "fortaleza", nullable = false, length = 100)
@@ -84,6 +91,9 @@ public class Mentor {
     public void setEspecialidad(String especialidad) { this.especialidad = especialidad; }
 
     public String getBiografia() { return biografia; }
+
+    public Set<Insignia> getInsignias() { return insignias; }
+    public void setInsignias(Set<Insignia> insignias) { this.insignias = insignias; }
 
     public BigDecimal getReputacion() { return reputacion; }
     public void setReputacion(BigDecimal reputacion) { this.reputacion = reputacion; }

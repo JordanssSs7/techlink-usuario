@@ -3,6 +3,8 @@ package com.techlink.model;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 // Entidad que representa la tabla "usuarios": datos de acceso comunes a todos los roles.
 @Entity
@@ -56,8 +58,23 @@ public class Usuario {
     @Column(name = "google_id", length = 50, unique = true)
     private String googleId;
 
+    // HU-13: descripción corta del perfil (máximo 300 caracteres) e intereses del usuario.
+    @Column(length = 300)
+    private String descripcion;
+
+    @ElementCollection
+    @CollectionTable(name = "usuario_intereses", joinColumns = @JoinColumn(name = "id_usuario"))
+    @Column(name = "interes", nullable = false, length = 40)
+    private Set<String> intereses = new LinkedHashSet<>();
+
     public Usuario() {
     }
+
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+
+    public Set<String> getIntereses() { return intereses; }
+    public void setIntereses(Set<String> intereses) { this.intereses = intereses; }
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
