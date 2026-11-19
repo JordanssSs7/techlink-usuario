@@ -3,6 +3,7 @@ import './Cuenta.css';
 import { useAuth } from '../auth/authContext';
 import Avatar from './Avatar';
 import { avisarPerfilActualizado } from './fotoPerfil';
+import Cargando from './Cargando';
 
 const MAX_DESCRIPCION = 300;
 const MAX_INTERESES = 8;
@@ -54,7 +55,7 @@ export default function MiCuenta() {
   useEffect(() => () => { if (vista) URL.revokeObjectURL(vista); }, [vista]);
 
   if (falla) return <p className="cu-error" role="alert">{falla}</p>;
-  if (!perfil) return <p className="cu-vacio">Cargando tu perfil…</p>;
+  if (!perfil) return <Cargando texto="Cargando tu perfil…" />;
 
   const esEstudiante = perfil.rol === 'ESTUDIANTE';
 

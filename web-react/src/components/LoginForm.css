@@ -4,7 +4,7 @@
   --ink: #0a0a0a;
   --muted: #7a7a7a;
   --line: #dcdcdc;
-  --danger: #c62828;
+  --danger: #0b0b0c;
   display: flex;
   min-height: 100vh;
   background: #fff;
@@ -154,7 +154,7 @@
   font-size: 13px;
   line-height: 1.45;
   color: var(--danger);
-  background: #fdeeee;
+  background: #f3f3f4;
   border-radius: 14px;
 }
 

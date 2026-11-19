@@ -3,6 +3,7 @@ import './Cuenta.css';
 import { useAuth } from '../auth/authContext';
 import Avatar from './Avatar';
 import AgendarSesion from './AgendarSesion';
+import Cargando from './Cargando';
 
 const iniciales = (m) => [m.nombres, m.apellidos].filter(Boolean).map((x) => x.trim()[0]).join('').slice(0, 2).toUpperCase();
 const nombreCompleto = (m) => [m.nombres, m.apellidos].filter(Boolean).join(' ');
@@ -67,7 +68,7 @@ function PerfilPublico({ idMentor, onVolver, onAgendar }) {
     <div className="cu">
       <button type="button" className="cu-volver" onClick={onVolver}>← Volver a los mentores</button>
       {error && <p className="cu-error" role="alert">{error}</p>}
-      {!perfil && !error && <p className="cu-vacio">Cargando perfil…</p>}
+      {!perfil && !error && <Cargando texto="Cargando perfil…" />}
 
       {perfil && (
         <>
@@ -188,7 +189,7 @@ export default function MentoresRanking() {
   return (
     <div className="cu">
       {error && <p className="cu-error" role="alert">{error}</p>}
-      {!mentores && !error && <p className="cu-vacio">Cargando mentores…</p>}
+      {!mentores && !error && <Cargando texto="Cargando mentores…" />}
       {mentores?.length === 0 && <p className="cu-vacio">Todavía no hay mentores registrados.</p>}
 
       <ol className="cu-ranking">

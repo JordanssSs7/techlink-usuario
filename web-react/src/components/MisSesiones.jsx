@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './MisSesiones.css';
 import { useAuth } from '../auth/authContext';
 import AgendarSesion from './AgendarSesion';
+import Cargando from './Cargando';
 
 const FILTROS = [
   { valor: '', texto: 'Todas' },
@@ -121,7 +122,7 @@ export default function MisSesiones() {
       {aviso && <p className="ms-aviso" role="status">{aviso}</p>}
       {error && <p className="ms-error" role="alert">{error}</p>}
 
-      {sesiones === null && <p className="ms-vacio">Cargando tus sesiones…</p>}
+      {sesiones === null && <Cargando texto="Cargando tus sesiones…" />}
       {sesiones?.length === 0 && !error && (
         <p className="ms-vacio">
           {filtro
