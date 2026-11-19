@@ -8,7 +8,7 @@ export default function Avatar({ idUsuario, tieneFoto, version, iniciales, taman
       className={`avatar ${className}`}
       style={{
         display: 'inline-grid', placeItems: 'center', width: tamano, height: tamano, flexShrink: 0,
-        borderRadius: '50%', overflow: 'hidden', background: '#122C4F', color: '#fff',
+        borderRadius: '50%', overflow: 'hidden', background: '#0b0b0c', color: '#fff',
         fontWeight: 700, fontSize: Math.round(tamano * 0.38)
       }}
       aria-hidden="true"

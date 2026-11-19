@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../auth/authContext';
 import AgendarSesion from './AgendarSesion';
 import { CATEGORIAS, categoriaDe } from './cursosCategorias';
@@ -84,16 +84,12 @@ export default function BuscarMentor() {
     let activo = true;
     (async () => {
       try {
-        const [rc, rg] = await Promise.all([
-          authFetch('/api/cursos'),
-          authFetch('/api/estudiantes/me/cursos-criticos')
-        ]);
-        if (!rc.ok || !rg.ok) throw new Error();
+        // Se empieza sin cursos marcados: la selección anterior ya no se vuelve a marcar sola al entrar.
+        const rc = await authFetch('/api/cursos');
+        if (!rc.ok) throw new Error();
         const lista = await rc.json();
-        const guardados = await rg.json();
         if (!activo) return;
         setCatalogo(lista);
-        setCursos(guardados.map((c) => c.id));
       } catch {
         if (activo) setError('No se pudieron cargar los cursos. Intenta de nuevo.');
       } finally {
@@ -290,28 +286,24 @@ export default function BuscarMentor() {
               <h2>¿En qué cursos necesitas ayuda?</h2>
               <p className="bm-ayuda">Elige hasta {MAX_CURSOS} cursos de tu malla.</p>
             </div>
-            <div className="bm-contador" aria-live="polite" aria-label={`${cursos.length} de ${MAX_CURSOS} cursos seleccionados`}>
-              <div className="bm-contador-puntos" aria-hidden="true">
-                {Array.from({ length: MAX_CURSOS }, (_, i) => <span key={i} className={i < cursos.length ? 'lleno' : ''} />)}
-              </div>
-              <span aria-hidden="true">{cursos.length}/{MAX_CURSOS}</span>
-            </div>
           </div>
 
-          {cursos.length > 0 && (
-            <ul className="bm-elegidos">
-              {cursos.map((id) => {
-                const c = cursoPorId.get(id);
-                return (
-                  <li key={id}>
-                    {c && <IconoCategoria id={c.categoria} size={14} />}
-                    {c?.nombre}
-                    <button type="button" onClick={() => alternarCurso(id)} aria-label={`Quitar ${c?.nombre}`}>×</button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          {/* Las 5 casillas se van llenando con los cursos elegidos; tocar una elegida la quita. */}
+          <ol className="bm-slots" aria-label="Cursos elegidos">
+            {Array.from({ length: MAX_CURSOS }, (_, i) => {
+              const id = cursos[i];
+              const c = id ? cursoPorId.get(id) : null;
+              return c ? (
+                <li key={id} className="bm-slot lleno">
+                  <span className="bm-slot-ico"><IconoCategoria id={c.categoria} size={15} /></span>
+                  <span className="bm-slot-nom">{c.nombre}</span>
+                  <button type="button" onClick={() => alternarCurso(id)} aria-label={`Quitar ${c.nombre}`}>×</button>
+                </li>
+              ) : (
+                <li key={`vacio-${i}`} className="bm-slot"><span className="bm-slot-num">{i + 1}</span></li>
+              );
+            })}
+          </ol>
 
           <div className="bm-buscar-caja">
             <svg className="bm-lupa" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -326,7 +318,6 @@ export default function BuscarMentor() {
               onChange={(e) => setBusqueda(e.target.value)}
               aria-label="Buscar un curso"
             />
-            <span className="bm-buscar-total" aria-hidden="true">{visibles.length} cursos</span>
           </div>
 
           <div className="bm-filtros" role="tablist" aria-label="Categorías de cursos">
@@ -341,50 +332,57 @@ export default function BuscarMentor() {
               >
                 <IconoCategoria id={c.id} size={16} />
                 {c.nombre}
-                <span className="bm-filtro-n">{conteo.get(c.id)}</span>
               </button>
             ))}
           </div>
 
           <div className={`bm-cursos-marco${bordes.arriba ? ' sombra-arriba' : ''}${bordes.abajo ? ' sombra-abajo' : ''}`}>
-            <div className="bm-cursos" ref={listaRef} onScroll={actualizarBordes} key={categoria}>
+            <div className="bm-cursos bm-lista" ref={listaRef} onScroll={actualizarBordes} key={categoria}>
               {visibles.map((c, i) => {
                 const marcado = cursos.includes(c.id);
                 const bloqueado = !marcado && cursos.length >= MAX_CURSOS;
+                // En la vista "Todos" (sin búsqueda) los cursos se agrupan con el nombre de su categoría.
+                const abreGrupo = categoria === 'todos' && !texto && (i === 0 || visibles[i - 1].categoria !== c.categoria);
                 return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    style={{ '--i': Math.min(i, 14) }}
-                    className={`bm-curso${marcado ? ' marcado' : ''}${bloqueado ? ' bloqueado' : ''}`}
-                    aria-pressed={marcado}
-                    onClick={() => alternarCurso(c.id)}
-                  >
-                    <span className="bm-curso-icono"><IconoCategoria id={c.categoria} /></span>
-                    <span className="bm-curso-texto">
-                      <span className="bm-curso-nombre">{c.nombre}</span>
-                      <span className="bm-curso-cat">{CATEGORIAS[ordenCategoria.get(c.categoria)].nombre}</span>
-                    </span>
-                    <span className="bm-check" aria-hidden="true">
-                      <svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 12.5 10 17l9-10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    </span>
-                  </button>
+                  <Fragment key={c.id}>
+                    {abreGrupo && (
+                      <h3 className="bm-grupo">
+                        <IconoCategoria id={c.categoria} size={16} />
+                        <span>{CATEGORIAS[ordenCategoria.get(c.categoria)].nombre}</span>
+                      </h3>
+                    )}
+                    <button
+                      type="button"
+                      style={{ '--i': Math.min(i, 14) }}
+                      className={`bm-fila${marcado ? ' marcado' : ''}${bloqueado ? ' bloqueado' : ''}`}
+                      aria-pressed={marcado}
+                      onClick={() => alternarCurso(c.id)}
+                    >
+                      <span className="bm-curso-icono"><IconoCategoria id={c.categoria} /></span>
+                      <span className="bm-fila-texto">
+                        <span className="bm-curso-nombre">{c.nombre}</span>
+                        {texto && <span className="bm-fila-cat">{CATEGORIAS[ordenCategoria.get(c.categoria)].nombre}</span>}
+                      </span>
+                      <span className="bm-mas-btn" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24">
+                          <path className="mas" d="M12 5v14M5 12h14" />
+                          <path className="ok" d="M5 12.5 10 17l9-10" />
+                        </svg>
+                      </span>
+                    </button>
+                  </Fragment>
                 );
               })}
               {visibles.length === 0 && <p className="bm-vacio">Ningún curso coincide con la búsqueda.</p>}
             </div>
-            {bordes.abajo && (
-              <button
-                type="button"
-                className="bm-mas"
-                onClick={() => listaRef.current?.scrollBy({ top: 240, behavior: 'smooth' })}
-              >
-                Desliza para ver más <span aria-hidden="true">↓</span>
-              </button>
-            )}
           </div>
 
-          <div className="bm-acciones">
+          <div className="bm-acciones bm-acciones-cursos">
+            <p className="bm-seleccion" aria-live="polite">
+              {cursos.length === 0
+                ? 'Elige al menos un curso'
+                : <><strong>{cursos.length}</strong> de {MAX_CURSOS} cursos elegidos</>}
+            </p>
             <button type="button" className="bm-primario" onClick={continuarACursos} disabled={cursos.length === 0}>
               Continuar <span aria-hidden="true">→</span>
             </button>

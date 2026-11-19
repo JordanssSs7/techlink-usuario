@@ -1,0 +1,62 @@
+/* Tema blanco y negro de TechLink.
+   Se carga al final (main.jsx) para unificar la apariencia de toda la aplicación: sin colores, solo negro, blanco y grises,
+   con formas redondeadas y pequeñas animaciones. Las pantallas siguen usando sus propias hojas de estilo. */
+:root {
+  --mono-tinta: #0b0b0c;
+  --mono-gris: #5c5c63;
+  --mono-linea: #e4e4e7;
+  --mono-curva: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::selection { background: var(--mono-tinta); color: #fff; }
+
+/* La interfaz es blanco y negro, pero las imágenes (fotos y la mascota LlamaLink) y el logo de Google conservan su color. */
+
+/* Barra lateral del portal: negra, con la esquina derecha redondeada y un brillo suave arriba. */
+.pt-lateral {
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgba(255, 255, 255, 0.1), transparent 60%),
+    linear-gradient(180deg, #161618 0%, #000000 100%);
+  border-radius: 0 30px 30px 0;
+}
+.pt-enlace svg, .pt-enlace img { flex: none; transition: transform 0.35s var(--mono-curva); }
+.pt-enlace:hover svg { transform: translateY(-2px) rotate(-8deg) scale(1.12); }
+.pt-enlace.activo svg { transform: none; }
+
+/* Botones y píldoras: se hunden un poco al pulsar. */
+button:not(:disabled):active, a.login-submit:active { transform: scale(0.98); }
+
+/* Avisos de error: sin rojo, con un signo de exclamación en un círculo negro. */
+.login-alert { display: flex; align-items: flex-start; gap: 0.65rem; color: var(--mono-tinta); background: #f3f3f4; border: 1px solid var(--mono-linea); }
+.login-alert::before {
+  content: '!';
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--mono-tinta);
+  border-radius: 50%;
+}
+.login-error { color: var(--mono-tinta); font-weight: 700; }
+
+/* Indicador de carga (componente Cargando) */
+.cargando { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; padding: 2.5rem 1rem; color: var(--mono-gris); font-size: 14px; }
+.cargando p { margin: 0; letter-spacing: 0.01em; animation: cargando-respirar 1.6s ease-in-out infinite; }
+.cargando-orbita { position: relative; width: 46px; height: 46px; }
+.cargando-orbita i { position: absolute; border-radius: 50%; }
+.cargando-orbita i:nth-child(1) { inset: 0; border: 2px solid rgba(11, 11, 12, 0.08); border-top-color: var(--mono-tinta); animation: cargando-girar 0.9s linear infinite; }
+.cargando-orbita i:nth-child(2) { inset: 8px; border: 2px solid transparent; border-right-color: #9a9aa1; animation: cargando-girar 1.4s linear infinite reverse; }
+.cargando-orbita i:nth-child(3) { inset: 18px; background: var(--mono-tinta); animation: cargando-latir 1.2s ease-in-out infinite; }
+@keyframes cargando-girar { to { transform: rotate(360deg); } }
+@keyframes cargando-latir { 0%, 100% { transform: scale(0.6); opacity: 0.5; } 50% { transform: scale(1); opacity: 1; } }
+@keyframes cargando-respirar { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cargando-orbita i, .cargando p { animation-duration: 3s; }
+  .pt-enlace:hover svg { transform: none; }
+}

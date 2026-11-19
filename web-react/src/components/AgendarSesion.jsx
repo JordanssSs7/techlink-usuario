@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/authContext';
+import Cargando from './Cargando';
 
 const DIAS = [
   'Domingo', 'Lunes', 'Martes', 'Miércoles',
@@ -229,7 +230,7 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
       )}
 
       {cargando ? (
-        <p>Cargando horarios...</p>
+        <Cargando texto="Cargando horarios…" />
       ) : (
         <>
           <p><strong>Horarios del mentor:</strong></p>
