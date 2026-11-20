@@ -15,6 +15,7 @@ import java.util.Optional;
 public interface CalificacionRepository extends JpaRepository<Calificacion, Integer> {
 
     // Promedio de estrellas y cantidad de calificaciones que recibió un mentor.
+    // HU-53: las calificaciones que el administrador ocultó no cuentan ni se muestran.
     interface Resumen {
         Double getPromedio();
 
@@ -27,10 +28,10 @@ public interface CalificacionRepository extends JpaRepository<Calificacion, Inte
     List<Calificacion> buscarPorSesiones(@Param("ids") Collection<Integer> ids);
 
     // HU-14: las calificaciones con comentario más recientes de un mentor.
-    @Query("SELECT c FROM Calificacion c WHERE c.sesion.mentor.id = :mentorId AND c.comentario IS NOT NULL "
+    @Query("SELECT c FROM Calificacion c WHERE c.sesion.mentor.id = :mentorId AND c.comentario IS NOT NULL AND c.oculto = false "
             + "ORDER BY c.fechaCreacion DESC, c.id DESC")
     List<Calificacion> ultimosComentarios(@Param("mentorId") Integer mentorId, Pageable pagina);
 
-    @Query("SELECT AVG(c.estrellas) AS promedio, COUNT(c) AS total FROM Calificacion c WHERE c.sesion.mentor.id = :mentorId")
+    @Query("SELECT AVG(c.estrellas) AS promedio, COUNT(c) AS total FROM Calificacion c WHERE c.sesion.mentor.id = :mentorId AND c.oculto = false")
     Resumen resumenDeMentor(@Param("mentorId") Integer mentorId);
 }

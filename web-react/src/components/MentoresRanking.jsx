@@ -4,6 +4,7 @@ import { useAuth } from '../auth/authContext';
 import Avatar from './Avatar';
 import AgendarSesion from './AgendarSesion';
 import Cargando from './Cargando';
+import ReportarModal from './ReportarModal';
 
 const iniciales = (m) => [m.nombres, m.apellidos].filter(Boolean).map((x) => x.trim()[0]).join('').slice(0, 2).toUpperCase();
 const nombreCompleto = (m) => [m.nombres, m.apellidos].filter(Boolean).join(' ');
@@ -45,9 +46,10 @@ function Insignias({ lista }) {
 
 // HU-14: perfil público de un mentor (cursos dominados, promedio de estrellas, últimos comentarios e insignias).
 function PerfilPublico({ idMentor, onVolver, onAgendar }) {
-  const { authFetch } = useAuth();
+  const { authFetch, usuario } = useAuth();
   const [perfil, setPerfil] = useState(null);
   const [error, setError] = useState('');
+  const [reportando, setReportando] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -84,7 +86,12 @@ function PerfilPublico({ idMentor, onVolver, onAgendar }) {
               </p>
               <Insignias lista={perfil.insignias} />
             </div>
-            <button type="button" className="cu-boton primario" onClick={() => onAgendar(perfil)}>Agendar sesión</button>
+            <div className="cu-acciones-perfil">
+              <button type="button" className="cu-boton primario" onClick={() => onAgendar(perfil)}>Agendar sesión</button>
+              {perfil.idUsuario !== usuario.id && (
+                <button type="button" className="cu-boton" onClick={() => setReportando(true)}>Reportar</button>
+              )}
+            </div>
           </section>
 
           {(perfil.descripcion || perfil.biografia) && (
@@ -136,6 +143,16 @@ function PerfilPublico({ idMentor, onVolver, onAgendar }) {
                 </ul>
               )}
           </section>
+
+          {reportando && (
+            <ReportarModal
+              tipo="USUARIO"
+              idUsuario={perfil.idUsuario}
+              titulo={`Reportar a ${nombreCompleto(perfil)}`}
+              subtitulo="Cuéntanos qué pasó. Un administrador revisará tu reporte."
+              onCerrar={() => setReportando(false)}
+            />
+          )}
         </>
       )}
     </div>

@@ -3,6 +3,7 @@ import './MisSesiones.css';
 import { useAuth } from '../auth/authContext';
 import AgendarSesion from './AgendarSesion';
 import Cargando from './Cargando';
+import ReportarModal from './ReportarModal';
 
 const FILTROS = [
   { valor: '', texto: 'Todas' },
@@ -175,6 +176,7 @@ export default function MisSesiones() {
                     <button type="button" className="ms-boton peligro" onClick={() => setAccion({ tipo: 'cancelar', sesion: s })}>Cancelar</button>
                   </>
                 )}
+                <button type="button" className="ms-boton" onClick={() => setAccion({ tipo: 'reportar', sesion: s })}>Reportar</button>
                 {esMentor && s.puedeEditarNota && (
                   <button type="button" className="ms-boton" onClick={() => setAccion({ tipo: 'nota', sesion: s })}>
                     {s.nota ? 'Editar notas' : 'Agregar notas'}
@@ -208,6 +210,15 @@ export default function MisSesiones() {
             onConfirmado={() => cargar()}
           />
         </Modal>
+      )}
+      {accion?.tipo === 'reportar' && (
+        <ReportarModal
+          tipo="SESION"
+          idSesion={accion.sesion.id}
+          titulo="Reportar sesión"
+          subtitulo={`${accion.sesion.curso || 'Mentoría'} con ${accion.sesion.contraparte} · ${fechaLarga(accion.sesion.fecha)}`}
+          onCerrar={cerrar}
+        />
       )}
       {accion?.tipo === 'nota' && (
         <Modal titulo="Notas de la sesión" onCerrar={cerrar}>

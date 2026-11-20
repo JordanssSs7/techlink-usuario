@@ -1,0 +1,21 @@
+/* HU-29: ventana para reportar una sesión o a un usuario. Blanco y negro, igual que el resto de la aplicación. */
+.rp-velo { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(0, 0, 0, 0.55); }
+.rp-modal { width: min(460px, 100%); max-height: calc(100vh - 2rem); overflow-y: auto; padding: 1.5rem; color: #0b0b0c; background: #fff; border-radius: 16px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4); font-family: inherit; animation: rp-entrar 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+.rp-modal:focus-visible, .rp-modal :focus-visible { outline: 2px solid #0b0b0c; outline-offset: 2px; }
+.rp-modal h2 { margin: 0; font-size: 20px; }
+.rp-sub { margin: 0.4rem 0 1rem; font-size: 14px; line-height: 1.5; color: #5c5c63; }
+.rp-modal label { display: block; margin: 0.9rem 0 0.4rem; font-size: 14px; font-weight: 700; }
+.rp-modal select, .rp-modal textarea { width: 100%; padding: 0.7rem 0.85rem; font: inherit; font-size: 15px; color: #0b0b0c; background: #fff; border: 1px solid #d9d9dd; border-radius: 10px; box-sizing: border-box; }
+.rp-modal textarea { resize: vertical; }
+.rp-contador { margin: 0.25rem 0 0; font-size: 12px; text-align: right; color: #5c5c63; }
+.rp-pista { margin: 0.5rem 0 0; font-size: 13px; color: #5c5c63; }
+.rp-error { margin: 0.75rem 0 0; padding: 0.7rem 1rem; font-size: 14px; color: #000; background: #f6f6f7; border-left: 4px solid #000; border-radius: 8px; }
+.rp-botones { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.1rem; }
+.rp-boton { padding: 0.6rem 1.2rem; font-size: 14px; font-weight: 700; color: #0b0b0c; background: #fff; border: 1px solid #0b0b0c; border-radius: 999px; cursor: pointer; transition: background 0.15s; }
+.rp-boton:hover:not(:disabled) { background: #f1f1f1; }
+.rp-boton.primario { color: #fff; background: #0b0b0c; }
+.rp-boton.primario:hover:not(:disabled) { background: #222; }
+.rp-boton:disabled { opacity: 0.55; cursor: default; }
+@keyframes rp-entrar { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@media (max-width: 560px) { .rp-botones { flex-direction: column-reverse; } }
+@media (prefers-reduced-motion: reduce) { .rp-modal, .rp-boton { animation: none; transition: none; } }

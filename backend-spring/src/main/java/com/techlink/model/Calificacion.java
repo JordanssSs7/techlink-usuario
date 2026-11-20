@@ -35,6 +35,11 @@ public class Calificacion {
     @Column(name = "fecha_creacion", nullable = false, insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
+    // HU-53: una calificación oculta por el administrador no se muestra ni cuenta para la reputación del mentor.
+    // Solo la modifica el panel de administración, por eso aquí es de solo lectura.
+    @Column(nullable = false, insertable = false, updatable = false)
+    private boolean oculto;
+
     public Calificacion() {
     }
 
@@ -50,4 +55,6 @@ public class Calificacion {
     public void setComentario(String comentario) { this.comentario = comentario; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
+
+    public boolean isOculto() { return oculto; }
 }
