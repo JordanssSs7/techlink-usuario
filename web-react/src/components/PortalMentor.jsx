@@ -4,11 +4,15 @@ import { useAuth } from '../auth/authContext';
 import PerfilMentor from './PerfilMentor';
 import MisSesiones from './MisSesiones';
 import MiCuenta from './MiCuenta';
+import Foro from './Foro';
+import CentroAyuda from './CentroAyuda';
 
 const SECCIONES = [
   { id: 'perfil', titulo: 'Mi perfil' },
   { id: 'cuenta', titulo: 'Mis datos' },
-  { id: 'sesiones', titulo: 'Mis sesiones' }
+  { id: 'sesiones', titulo: 'Mis sesiones' },
+  { id: 'foro', titulo: 'Foro' },
+  { id: 'ayuda', titulo: 'Ayuda' }
 ];
 
 // Sitio del mentor: su perfil (HU-05) y sus sesiones con las notas (HU-20 y HU-21).
@@ -49,6 +53,22 @@ export default function PortalMentor() {
           <h1>Mis datos</h1>
           <p className="pm-intro">Tu foto y tu descripción se ven en tu perfil público de mentor.</p>
           <MiCuenta />
+        </main>
+      )}
+      {seccion === 'foro' && (
+        <main className="pm-contenido">
+          <p className="pm-eyebrow">Comunidad</p>
+          <h1>Foro de consultas</h1>
+          <p className="pm-intro">Responde las dudas de los estudiantes por curso: tu experiencia es la que más ayuda.</p>
+          <Foro />
+        </main>
+      )}
+      {seccion === 'ayuda' && (
+        <main className="pm-contenido">
+          <p className="pm-eyebrow">Soporte</p>
+          <h1>Centro de ayuda</h1>
+          <p className="pm-intro">Respuestas a las preguntas más frecuentes sobre TechLink.</p>
+          <CentroAyuda />
         </main>
       )}
       {seccion === 'sesiones' && (

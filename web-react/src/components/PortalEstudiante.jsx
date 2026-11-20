@@ -3,6 +3,8 @@ import './PortalEstudiante.css';
 import { useAuth } from '../auth/authContext';
 import BuscarMentor from './BuscarMentor';
 import MisSesiones from './MisSesiones';
+import Foro from './Foro';
+import CentroAyuda from './CentroAyuda';
 import MentoresRanking from './MentoresRanking';
 import MiCuenta from './MiCuenta';
 import PostularMentor from './PostularMentor';
@@ -40,6 +42,16 @@ const SECCIONES = [
     id: 'postular',
     titulo: 'Ser mentor',
     icono: <><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" /></>
+  },
+  {
+    id: 'foro',
+    titulo: 'Foro',
+    icono: <><path d="M4 5h16v10H9l-5 4z" /><path d="M8 9h8M8 12h5" /></>
+  },
+  {
+    id: 'ayuda',
+    titulo: 'Ayuda',
+    icono: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" /></>
   },
   {
     id: 'cuenta',
@@ -188,6 +200,22 @@ export default function PortalEstudiante() {
               <h1>Ser mentor</h1>
               <p className="pt-intro">Si ya llevas varios ciclos, puedes postular para guiar a otros alumnos.</p>
               <PostularMentor />
+            </section>
+          )}
+          {seccion === 'foro' && (
+            <section key="foro" className="pt-seccion">
+              <p className="pt-eyebrow">Comunidad</p>
+              <h1>Foro de consultas</h1>
+              <p className="pt-intro">Pregunta tus dudas por curso y ayuda a otros con lo que sabes. Quien pregunta puede marcar la respuesta que le sirvió.</p>
+              <Foro />
+            </section>
+          )}
+          {seccion === 'ayuda' && (
+            <section key="ayuda" className="pt-seccion">
+              <p className="pt-eyebrow">Soporte</p>
+              <h1>Centro de ayuda</h1>
+              <p className="pt-intro">Respuestas a las preguntas más frecuentes sobre TechLink.</p>
+              <CentroAyuda />
             </section>
           )}
           {seccion === 'cuenta' && (

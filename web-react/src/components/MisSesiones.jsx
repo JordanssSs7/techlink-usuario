@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './MisSesiones.css';
 import { useAuth } from '../auth/authContext';
 import AgendarSesion from './AgendarSesion';
+import RecursosSesion from './RecursosSesion';
 import Cargando from './Cargando';
 import ReportarModal from './ReportarModal';
 
@@ -177,6 +178,11 @@ export default function MisSesiones() {
                   </>
                 )}
                 <button type="button" className="ms-boton" onClick={() => setAccion({ tipo: 'reportar', sesion: s })}>Reportar</button>
+                {s.estado !== 'CANCELADA' && (esMentor || s.recursos > 0) && (
+                  <button type="button" className="ms-boton" onClick={() => setAccion({ tipo: 'recursos', sesion: s })}>
+                    Recursos{s.recursos > 0 ? ` (${s.recursos})` : ''}
+                  </button>
+                )}
                 {esMentor && s.puedeEditarNota && (
                   <button type="button" className="ms-boton" onClick={() => setAccion({ tipo: 'nota', sesion: s })}>
                     {s.nota ? 'Editar notas' : 'Agregar notas'}
@@ -219,6 +225,14 @@ export default function MisSesiones() {
           subtitulo={`${accion.sesion.curso || 'Mentoría'} con ${accion.sesion.contraparte} · ${fechaLarga(accion.sesion.fecha)}`}
           onCerrar={cerrar}
         />
+      )}
+      {accion?.tipo === 'recursos' && (
+        <Modal titulo="Recursos de la sesión" ancho="ancho" onCerrar={cerrar}>
+          <RecursosSesion sesion={accion.sesion} esMentor={esMentor} onCambio={cargar} />
+          <div className="ms-modal-botones">
+            <button type="button" className="ms-boton" onClick={cerrar}>Cerrar</button>
+          </div>
+        </Modal>
       )}
       {accion?.tipo === 'nota' && (
         <Modal titulo="Notas de la sesión" onCerrar={cerrar}>
