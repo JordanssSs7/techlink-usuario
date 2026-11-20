@@ -100,3 +100,7 @@
   .cu-cabecera > .cu-boton { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .cu-boton { transition: none; } }
+
+/* HU-29: botones del perfil público del mentor (agendar y reportar). */
+.cu-acciones-perfil { display: flex; flex-direction: column; gap: 0.5rem; align-self: flex-start; }
+@media (max-width: 560px) { .cu-acciones-perfil { width: 100%; } .cu-acciones-perfil .cu-boton { width: 100%; } }
