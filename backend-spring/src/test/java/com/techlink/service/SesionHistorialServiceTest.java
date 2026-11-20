@@ -7,6 +7,7 @@ import com.techlink.model.Curso;
 import com.techlink.model.Sesion;
 import com.techlink.model.SesionNota;
 import com.techlink.repository.CalificacionRepository;
+import com.techlink.repository.RecursoRepository;
 import com.techlink.repository.SesionNotaRepository;
 import com.techlink.repository.SesionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ import static com.techlink.service.PruebaSesiones.USUARIO_ESTUDIANTE;
 import static com.techlink.service.PruebaSesiones.USUARIO_MENTOR;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 // Pruebas de HU-20: historial de sesiones con filtro por estado y las acciones que corresponden a cada una.
@@ -29,6 +31,7 @@ class SesionHistorialServiceTest {
     private SesionRepository sesionRepository;
     private CalificacionRepository calificacionRepository;
     private SesionNotaRepository notaRepository;
+    private RecursoRepository recursoRepository;
     private SesionHistorialService servicio;
 
     private Sesion programada;   // dentro de 5 horas
@@ -41,7 +44,8 @@ class SesionHistorialServiceTest {
         sesionRepository = Mockito.mock(SesionRepository.class);
         calificacionRepository = Mockito.mock(CalificacionRepository.class);
         notaRepository = Mockito.mock(SesionNotaRepository.class);
-        servicio = new SesionHistorialService(sesionRepository, calificacionRepository, notaRepository);
+        recursoRepository = Mockito.mock(RecursoRepository.class);
+        servicio = new SesionHistorialService(sesionRepository, calificacionRepository, notaRepository, recursoRepository);
 
         LocalDateTime ahora = LocalDateTime.now();
         programada = PruebaSesiones.sesion(1, ahora.plusHours(5), 60, Sesion.EstadoSesion.CONFIRMADA);
@@ -58,6 +62,7 @@ class SesionHistorialServiceTest {
         when(sesionRepository.historialDeMentor(USUARIO_MENTOR)).thenReturn(todas);
         when(calificacionRepository.buscarPorSesiones(any())).thenReturn(List.of());
         when(notaRepository.buscarPorSesiones(any())).thenReturn(List.of());
+        when(recursoRepository.contarPorSesiones(any(), anyBoolean())).thenReturn(List.<Object[]>of());
     }
 
     private SesionHistorialResponse buscar(List<SesionHistorialResponse> lista, int id) {

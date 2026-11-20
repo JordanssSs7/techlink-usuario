@@ -7,6 +7,7 @@ import com.techlink.model.Sesion;
 import com.techlink.model.SesionNota;
 import com.techlink.model.Usuario;
 import com.techlink.repository.CalificacionRepository;
+import com.techlink.repository.RecursoRepository;
 import com.techlink.repository.SesionNotaRepository;
 import com.techlink.repository.SesionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -34,23 +36,27 @@ public class SesionHistorialService {
     private final SesionRepository sesionRepository;
     private final CalificacionRepository calificacionRepository;
     private final SesionNotaRepository notaRepository;
+    private final RecursoRepository recursoRepository;
     private final Clock reloj;
 
     @Autowired
     public SesionHistorialService(SesionRepository sesionRepository,
                                   CalificacionRepository calificacionRepository,
-                                  SesionNotaRepository notaRepository) {
-        this(sesionRepository, calificacionRepository, notaRepository, Clock.systemDefaultZone());
+                                  SesionNotaRepository notaRepository,
+                                  RecursoRepository recursoRepository) {
+        this(sesionRepository, calificacionRepository, notaRepository, recursoRepository, Clock.systemDefaultZone());
     }
 
     // El reloj se puede cambiar solo en las pruebas automaticas.
     SesionHistorialService(SesionRepository sesionRepository,
                            CalificacionRepository calificacionRepository,
                            SesionNotaRepository notaRepository,
+                           RecursoRepository recursoRepository,
                            Clock reloj) {
         this.sesionRepository = sesionRepository;
         this.calificacionRepository = calificacionRepository;
         this.notaRepository = notaRepository;
+        this.recursoRepository = recursoRepository;
         this.reloj = reloj;
     }
 
@@ -77,10 +83,16 @@ public class SesionHistorialService {
         Map<Integer, SesionNota> notas = notaRepository.buscarPorSesiones(ids).stream()
                 .collect(Collectors.toMap(n -> n.getSesion().getId(), Function.identity()));
 
+        Map<Integer, Integer> recursos = new HashMap<>();
+        for (Object[] fila : recursoRepository.contarPorSesiones(ids, !esMentor)) {
+            recursos.put((Integer) fila[0], ((Number) fila[1]).intValue());
+        }
+
         LocalDateTime ahora = LocalDateTime.now(reloj);
         return sesiones.stream()
                 .filter(s -> filtro == null || filtro.equals(estadoVisible(s, ahora)))
-                .map(s -> convertir(s, esMentor, ahora, calificaciones.get(s.getId()), notas.get(s.getId())))
+                .map(s -> convertir(s, esMentor, ahora, calificaciones.get(s.getId()), notas.get(s.getId()),
+                        recursos.getOrDefault(s.getId(), 0)))
                 .toList();
     }
 
@@ -92,7 +104,7 @@ public class SesionHistorialService {
     }
 
     private SesionHistorialResponse convertir(Sesion s, boolean esMentor, LocalDateTime ahora,
-                                              Calificacion calificacion, SesionNota nota) {
+                                              Calificacion calificacion, SesionNota nota, int recursos) {
         String estado = estadoVisible(s, ahora);
         boolean completada = COMPLETADA.equals(estado);
         boolean programada = PROGRAMADA.equals(estado);
@@ -120,6 +132,6 @@ public class SesionHistorialService {
                 calificacion == null ? null : calificacion.getEstrellas(),
                 calificacion == null ? null : calificacion.getComentario(),
                 nota == null ? null : nota.getContenido(),
-                puedeCalificar, puedeModificar, puedeEditarNota);
+                puedeCalificar, puedeModificar, puedeEditarNota, recursos);
     }
 }

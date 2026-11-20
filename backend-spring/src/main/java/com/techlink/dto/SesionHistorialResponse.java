@@ -6,6 +6,7 @@ import java.time.LocalTime;
 // HU-20: una sesión del historial, con todo lo que la pantalla necesita para mostrar sus acciones.
 // estado: PROGRAMADA (confirmada y aún no termina), COMPLETADA (confirmada y ya terminó) o CANCELADA.
 // contraparte: el mentor si quien consulta es estudiante, o el estudiante si quien consulta es mentor.
+// recursos: cuántos recursos compartió el mentor en la sesión (HU-18); al estudiante no se le cuentan los ocultos.
 public record SesionHistorialResponse(
         Integer id,
         LocalDate fecha,
@@ -21,6 +22,7 @@ public record SesionHistorialResponse(
         String nota,
         boolean puedeCalificar,
         boolean puedeModificar,
-        boolean puedeEditarNota
+        boolean puedeEditarNota,
+        int recursos
 ) {
 }

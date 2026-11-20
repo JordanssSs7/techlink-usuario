@@ -46,6 +46,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    // 413: MySQL rechazó guardar un archivo porque supera su límite "max_allowed_packet" (el de XAMPP viene en 1 MB y el
+    // driver envía los archivos al doble de su tamaño). No es un fallo del usuario: hay que subir ese límite en my.ini.
+    @ExceptionHandler(org.springframework.orm.jpa.JpaSystemException.class)
+    public ResponseEntity<Map<String, Object>> errorDeBaseDeDatos(org.springframework.orm.jpa.JpaSystemException ex) {
+        for (Throwable causa = ex; causa != null; causa = causa.getCause()) {
+            if (causa.getClass().getSimpleName().equals("PacketTooBigException")) {
+                return error(HttpStatus.PAYLOAD_TOO_LARGE, "La base de datos no acepta archivos de este tamaño. Prueba con uno más "
+                        + "pequeño o pide que aumenten max_allowed_packet en MySQL (por ejemplo, a 64M en my.ini).");
+            }
+        }
+        throw ex;
+    }
+
     // 413: el archivo subido supera el límite que acepta el servidor.
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> archivoMuyGrande(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
