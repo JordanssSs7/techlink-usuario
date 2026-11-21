@@ -5,12 +5,14 @@ import PerfilMentor from './PerfilMentor';
 import MisSesiones from './MisSesiones';
 import MiCuenta from './MiCuenta';
 import Foro from './Foro';
+import Calendario from './Calendario';
 import CentroAyuda from './CentroAyuda';
 
 const SECCIONES = [
   { id: 'perfil', titulo: 'Mi perfil' },
   { id: 'cuenta', titulo: 'Mis datos' },
   { id: 'sesiones', titulo: 'Mis sesiones' },
+  { id: 'calendario', titulo: 'Calendario' },
   { id: 'foro', titulo: 'Foro' },
   { id: 'ayuda', titulo: 'Ayuda' }
 ];
@@ -53,6 +55,14 @@ export default function PortalMentor() {
           <h1>Mis datos</h1>
           <p className="pm-intro">Tu foto y tu descripción se ven en tu perfil público de mentor.</p>
           <MiCuenta />
+        </main>
+      )}
+      {seccion === 'calendario' && (
+        <main className="pm-contenido">
+          <p className="pm-eyebrow">Tu agenda</p>
+          <h1>Calendario</h1>
+          <p className="pm-intro">Tus sesiones con los estudiantes, por semana o por día. Elige una para ver su detalle y el enlace de la reunión.</p>
+          <Calendario />
         </main>
       )}
       {seccion === 'foro' && (

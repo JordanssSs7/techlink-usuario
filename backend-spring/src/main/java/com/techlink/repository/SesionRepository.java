@@ -74,4 +74,16 @@ public interface SesionRepository extends JpaRepository<Sesion, Integer> {
         ORDER BY s.fecha DESC, s.horaInicio DESC
         """)
     List<Sesion> historialDeMentor(@Param("usuarioId") Integer usuarioId);
+
+    // HU-26: sesiones confirmadas del usuario (como estudiante o como mentor) dentro de un rango de fechas.
+    @Query("""
+        SELECT s FROM Sesion s
+        WHERE s.estado = com.techlink.model.Sesion.EstadoSesion.CONFIRMADA
+          AND s.fecha BETWEEN :desde AND :hasta
+          AND (s.estudiante.usuario.id = :usuarioId OR s.mentor.usuario.id = :usuarioId)
+        ORDER BY s.fecha, s.horaInicio
+        """)
+    List<Sesion> confirmadasDelUsuarioEntre(@Param("usuarioId") Integer usuarioId,
+                                            @Param("desde") LocalDate desde,
+                                            @Param("hasta") LocalDate hasta);
 }
