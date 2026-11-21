@@ -4,6 +4,8 @@ import { useAuth } from '../auth/authContext';
 import BuscarMentor from './BuscarMentor';
 import MisSesiones from './MisSesiones';
 import Foro from './Foro';
+import Charlas from './Charlas';
+import Calendario from './Calendario';
 import CentroAyuda from './CentroAyuda';
 import MentoresRanking from './MentoresRanking';
 import MiCuenta from './MiCuenta';
@@ -32,6 +34,16 @@ const SECCIONES = [
     id: 'sesiones',
     titulo: 'Mis sesiones',
     icono: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17" /></>
+  },
+  {
+    id: 'charlas',
+    titulo: 'Charlas',
+    icono: <><rect x="3" y="5" width="13" height="14" rx="2" /><path d="m16 10 5-3v10l-5-3" /></>
+  },
+  {
+    id: 'calendario',
+    titulo: 'Calendario',
+    icono: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17M8 14h2M12 14h2M16 14h.01M8 17h2" /></>
   },
   {
     id: 'mentores',
@@ -200,6 +212,22 @@ export default function PortalEstudiante() {
               <h1>Ser mentor</h1>
               <p className="pt-intro">Si ya llevas varios ciclos, puedes postular para guiar a otros alumnos.</p>
               <PostularMentor />
+            </section>
+          )}
+          {seccion === 'charlas' && (
+            <section key="charlas" className="pt-seccion">
+              <p className="pt-eyebrow">Comunidad</p>
+              <h1>Charlas virtuales</h1>
+              <p className="pt-intro">Te recomendamos charlas según tus intereses y tus cursos críticos. Inscríbete y la verás en tu calendario.</p>
+              <Charlas />
+            </section>
+          )}
+          {seccion === 'calendario' && (
+            <section key="calendario" className="pt-seccion">
+              <p className="pt-eyebrow">Tu agenda</p>
+              <h1>Calendario</h1>
+              <p className="pt-intro">Tus sesiones de mentoría y las charlas a las que te inscribiste, por semana o por día.</p>
+              <Calendario />
             </section>
           )}
           {seccion === 'foro' && (
