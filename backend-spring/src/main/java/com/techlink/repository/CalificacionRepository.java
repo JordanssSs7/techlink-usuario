@@ -32,6 +32,10 @@ public interface CalificacionRepository extends JpaRepository<Calificacion, Inte
             + "ORDER BY c.fechaCreacion DESC, c.id DESC")
     List<Calificacion> ultimosComentarios(@Param("mentorId") Integer mentorId, Pageable pagina);
 
+    // HU-28: fecha de la sesión y estrellas de cada calificación visible de un mentor, para el promedio mes a mes.
+    @Query("SELECT c.sesion.fecha, c.estrellas FROM Calificacion c WHERE c.sesion.mentor.id = :mentorId AND c.oculto = false")
+    List<Object[]> fechasYEstrellasDeMentor(@Param("mentorId") Integer mentorId);
+
     @Query("SELECT AVG(c.estrellas) AS promedio, COUNT(c) AS total FROM Calificacion c WHERE c.sesion.mentor.id = :mentorId AND c.oculto = false")
     Resumen resumenDeMentor(@Param("mentorId") Integer mentorId);
 }

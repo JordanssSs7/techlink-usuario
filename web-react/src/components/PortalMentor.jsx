@@ -8,6 +8,9 @@ import Foro from './Foro';
 import Calendario from './Calendario';
 import MetasMentor from './MetasMentor';
 import CentroAyuda from './CentroAyuda';
+import Notificaciones from './Notificaciones';
+import EstadisticasMentor from './EstadisticasMentor';
+import useNotificacionesPendientes from './useNotificaciones';
 
 const SECCIONES = [
   { id: 'perfil', titulo: 'Mi perfil' },
@@ -15,6 +18,8 @@ const SECCIONES = [
   { id: 'sesiones', titulo: 'Mis sesiones' },
   { id: 'calendario', titulo: 'Calendario' },
   { id: 'metas', titulo: 'Metas' },
+  { id: 'estadisticas', titulo: 'Estadísticas' },
+  { id: 'notificaciones', titulo: 'Notificaciones' },
   { id: 'foro', titulo: 'Foro' },
   { id: 'ayuda', titulo: 'Ayuda' }
 ];
@@ -23,6 +28,7 @@ const SECCIONES = [
 export default function PortalMentor() {
   const { logout } = useAuth();
   const [seccion, setSeccion] = useState('perfil');
+  const { pendientes, poner: ponerPendientes } = useNotificacionesPendientes();
 
   return (
     <div className="pm">
@@ -44,6 +50,9 @@ export default function PortalMentor() {
               onClick={() => setSeccion(s.id)}
             >
               {s.titulo}
+              {s.id === 'notificaciones' && pendientes > 0 && (
+                <span className="no-badge" aria-label={`${pendientes} sin leer`}>{pendientes}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -75,12 +84,28 @@ export default function PortalMentor() {
           <Calendario />
         </main>
       )}
+      {seccion === 'estadisticas' && (
+        <main className="pm-contenido">
+          <p className="pm-eyebrow">Tu desempeño</p>
+          <h1>Estadísticas</h1>
+          <p className="pm-intro">Tus sesiones, horas y calificación mes a mes, y tu constancia de horas de mentoría en PDF.</p>
+          <EstadisticasMentor />
+        </main>
+      )}
       {seccion === 'foro' && (
         <main className="pm-contenido">
           <p className="pm-eyebrow">Comunidad</p>
           <h1>Foro de consultas</h1>
           <p className="pm-intro">Responde las dudas de los estudiantes por curso: tu experiencia es la que más ayuda.</p>
           <Foro />
+        </main>
+      )}
+      {seccion === 'notificaciones' && (
+        <main className="pm-contenido">
+          <p className="pm-eyebrow">Tus avisos</p>
+          <h1>Notificaciones</h1>
+          <p className="pm-intro">Confirmaciones, cambios de tus sesiones, recordatorios y anuncios. En Preferencias eliges qué recibir.</p>
+          <Notificaciones onCambio={ponerPendientes} />
         </main>
       )}
       {seccion === 'ayuda' && (

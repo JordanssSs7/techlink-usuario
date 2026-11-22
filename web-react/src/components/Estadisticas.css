@@ -1,0 +1,53 @@
+/* Estadísticas del mentor (HU-28) y constancia de horas (HU-27). Paleta: Midnight #122C4F, Pearl #FBF9E4, Noir #000, Ocean #5B88B2. */
+.es { display: flex; flex-direction: column; gap: 1rem; max-width: 860px; color: #0b0b0c; font-family: inherit; }
+.es h2, .es p, .es ul { margin: 0; }
+.es ul { padding: 0; list-style: none; }
+.es :focus-visible { outline: 2px solid #5B88B2; outline-offset: 2px; }
+
+.es-error { padding: 0.7rem 1rem; font-size: 14px; color: #000; background: #FBF9E4; border-left: 4px solid #000; border-radius: 8px; }
+.es-vacio { padding: 1rem 1.25rem; color: #5f6673; background: #FBF9E4; border-radius: 10px; }
+.es-sub { font-size: 13px; color: #5f6673; }
+
+.es-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+.es-kpis li { display: flex; flex-direction: column; gap: 0.25rem; padding: 1rem; background: #122C4F; border-radius: 14px; color: #fff; }
+.es-kpi-valor { font-size: 28px; font-weight: 800; line-height: 1.1; }
+.es-kpi-valor small { font-size: 18px; color: #FBF9E4; }
+.es-kpi-nombre { font-size: 12px; color: #dbe6f2; }
+@media (max-width: 700px) { .es-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.es-meses { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 14px; color: #5f6673; }
+.es-meses button { padding: 0.4rem 1rem; font: inherit; font-size: 13px; font-weight: 700; color: #122C4F; background: #fff; border: 1px solid #122C4F; border-radius: 999px; cursor: pointer; }
+.es-meses button.activo { color: #fff; background: #122C4F; }
+
+.es-tarjeta { display: flex; flex-direction: column; gap: 0.6rem; padding: 1.25rem; background: #fff; border: 1px solid #e3e7ed; border-radius: 14px; box-shadow: 0 1px 2px rgba(10, 26, 48, 0.05); }
+.es-titulo { font-size: 18px; color: #122C4F; }
+
+.es-grafico { width: 100%; height: auto; }
+.es-rejilla { stroke: #e3e7ed; stroke-width: 1; }
+.es-eje { font-size: 11px; fill: #5f6673; }
+.es-barra { fill: #5B88B2; }
+.es-barra:hover { fill: #122C4F; }
+.es-linea { fill: none; stroke: #122C4F; stroke-width: 2.5; stroke-linejoin: round; }
+.es-punto { fill: #FBF9E4; stroke: #122C4F; stroke-width: 2.5; }
+
+.es-tabla-scroll { overflow-x: auto; }
+.es-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.es-tabla th, .es-tabla td { padding: 0.55rem 0.75rem; text-align: left; border-bottom: 1px solid #e3e7ed; white-space: nowrap; }
+.es-tabla th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #5f6673; }
+
+.es-resumen-constancia { font-size: 15px; }
+.es-cursos { display: flex; flex-direction: column; border: 1px solid #e3e7ed; border-radius: 10px; }
+.es-cursos li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.9rem; font-size: 14px; border-top: 1px solid #e3e7ed; }
+.es-cursos li:first-child { border-top: 0; }
+.es-cursos li span:last-child { color: #5f6673; }
+.es-acciones { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.es-boton { padding: 0.6rem 1.2rem; font: inherit; font-size: 14px; font-weight: 700; color: #122C4F; background: #fff; border: 1px solid #122C4F; border-radius: 999px; cursor: pointer; }
+.es-boton:hover:not(:disabled) { background: #eaf0f7; }
+.es-boton.primario { color: #fff; background: #122C4F; }
+.es-boton.primario:hover:not(:disabled) { background: #1d4170; }
+.es-boton:disabled { opacity: 0.6; cursor: wait; }
+
+.es-velo { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(10, 26, 48, 0.6); }
+.es-modal { display: flex; flex-direction: column; gap: 0.75rem; width: min(900px, 100%); height: min(90vh, 900px); padding: 1rem; background: #fff; border-radius: 14px; }
+.es-modal-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.es-pdf { flex: 1; width: 100%; border: 1px solid #e3e7ed; border-radius: 8px; background: #f4f4f5; }

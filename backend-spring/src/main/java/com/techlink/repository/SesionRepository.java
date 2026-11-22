@@ -76,6 +76,15 @@ public interface SesionRepository extends JpaRepository<Sesion, Integer> {
         """)
     List<Sesion> historialDeMentor(@Param("usuarioId") Integer usuarioId);
 
+    // HU-23: sesiones confirmadas entre dos fechas (de todos los usuarios), para enviar los recordatorios.
+    @Query("""
+        SELECT s FROM Sesion s
+        WHERE s.estado = com.techlink.model.Sesion.EstadoSesion.CONFIRMADA
+          AND s.fecha BETWEEN :desde AND :hasta
+        ORDER BY s.fecha, s.horaInicio
+        """)
+    List<Sesion> confirmadasEntre(@Param("desde") LocalDate desde, @Param("hasta") LocalDate hasta);
+
     // HU-26: sesiones confirmadas del usuario (como estudiante o como mentor) dentro de un rango de fechas.
     @Query("""
         SELECT s FROM Sesion s
