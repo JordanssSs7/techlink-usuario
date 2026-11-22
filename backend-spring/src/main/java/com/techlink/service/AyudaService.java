@@ -27,7 +27,7 @@ public class AyudaService {
     private final String correoSoporte;
 
     public AyudaService(AyudaPreguntaRepository preguntaRepository,
-                        @Value("${app.ayuda.correo-soporte:soporte@techlink.edu.pe}") String correoSoporte) {
+                        @Value("${app.ayuda.correo-soporte:soporte.techlink.app@gmail.com}") String correoSoporte) {
         this.preguntaRepository = preguntaRepository;
         this.correoSoporte = correoSoporte;
     }

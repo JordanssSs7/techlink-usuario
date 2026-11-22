@@ -33,7 +33,7 @@ public class PerfilService {
     static final int MAX_DESCRIPCION = 300;
     static final int MAX_INTERESES = 8;
     static final int MIN_INTERES = 2;
-    static final int MAX_INTERES = 40;
+    static final int MAX_INTERES = 50;
     static final long MAX_FOTO_BYTES = 2L * 1024 * 1024;
 
     private static final String ROL_ESTUDIANTE = "ESTUDIANTE";
