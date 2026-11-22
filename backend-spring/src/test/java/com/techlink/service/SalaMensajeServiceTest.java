@@ -108,12 +108,17 @@ class SalaMensajeServiceTest {
         assertEquals("Escribe o pega el código.", codigo.getCampos().get("contenido"));
     }
 
+    // Texto de exactamente n caracteres que no parece spam (la moderación bloquea una misma letra repetida muchas veces).
+    private static String largo(int n) {
+        return "lorem ipsum ".repeat(n / 12 + 1).substring(0, n - 1) + "x";
+    }
+
     @Test
     void unTextoMuyLargoSeRechaza() {
         assertEquals(1000, SalaMensajeService.MAX_TEXTO);
-        texto("a".repeat(1000));
+        texto(largo(1000));
 
-        DatosInvalidosException error = assertThrows(DatosInvalidosException.class, () -> texto("a".repeat(1001)));
+        DatosInvalidosException error = assertThrows(DatosInvalidosException.class, () -> texto(largo(1001)));
 
         assertTrue(error.getCampos().get("contenido").contains("1000"));
     }

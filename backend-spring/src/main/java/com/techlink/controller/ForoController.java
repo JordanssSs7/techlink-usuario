@@ -2,6 +2,8 @@ package com.techlink.controller;
 
 import com.techlink.dto.ForoDtos.ConsultaDetalle;
 import com.techlink.dto.ForoDtos.ConsultaResumen;
+import com.techlink.dto.ForoDtos.EdicionConsulta;
+import com.techlink.dto.ForoDtos.EdicionRespuesta;
 import com.techlink.dto.ForoDtos.NuevaConsulta;
 import com.techlink.dto.ForoDtos.NuevaRespuesta;
 import com.techlink.exception.ReglaNegocioException;
@@ -10,7 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,6 +55,32 @@ public class ForoController {
     @PostMapping
     public ResponseEntity<ConsultaDetalle> crear(@AuthenticationPrincipal Jwt jwt, @RequestBody NuevaConsulta request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(foroService.crear(participante(jwt), request));
+    }
+
+    // Quien hizo la consulta la edita (403 si es de otro, 422 si la moderación no la deja) o la elimina (204).
+    @PutMapping("/{id}")
+    public ResponseEntity<ConsultaDetalle> editar(@AuthenticationPrincipal Jwt jwt, @PathVariable Integer id,
+                                                  @RequestBody EdicionConsulta request) {
+        return ResponseEntity.ok(foroService.editarConsulta(participante(jwt), id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@AuthenticationPrincipal Jwt jwt, @PathVariable Integer id) {
+        foroService.eliminarConsulta(participante(jwt), id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Quien escribió la respuesta la edita o la elimina (devuelve la consulta actualizada).
+    @PutMapping("/{id}/respuestas/{respuestaId}")
+    public ResponseEntity<ConsultaDetalle> editarRespuesta(@AuthenticationPrincipal Jwt jwt, @PathVariable Integer id,
+                                                           @PathVariable Integer respuestaId, @RequestBody EdicionRespuesta request) {
+        return ResponseEntity.ok(foroService.editarRespuesta(participante(jwt), id, respuestaId, request));
+    }
+
+    @DeleteMapping("/{id}/respuestas/{respuestaId}")
+    public ResponseEntity<ConsultaDetalle> eliminarRespuesta(@AuthenticationPrincipal Jwt jwt, @PathVariable Integer id,
+                                                             @PathVariable Integer respuestaId) {
+        return ResponseEntity.ok(foroService.eliminarRespuesta(participante(jwt), id, respuestaId));
     }
 
     @PostMapping("/{id}/respuestas")

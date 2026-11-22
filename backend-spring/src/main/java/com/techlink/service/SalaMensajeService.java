@@ -75,6 +75,10 @@ public class SalaMensajeService {
         if (limpio.length() > maximo) {
             throw new DatosInvalidosException("contenido", "El mensaje no puede pasar de %d caracteres.".formatted(maximo));
         }
+        // Los mensajes de texto pasan por la moderación (el código no: puede llevar cualquier cosa).
+        if (!codigo) {
+            ModeracionTexto.exigirLimpio(limpio);
+        }
         controlarRitmo(usuarioId);
 
         String lenguajeFinal = null;

@@ -40,6 +40,10 @@ public class Consulta {
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
 
+    // Cuándo la editó su autor (null si nunca).
+    @Column(name = "fecha_edicion")
+    private LocalDateTime fechaEdicion;
+
     @Column(nullable = false, insertable = false, updatable = false)
     private boolean oculto;
 
@@ -63,6 +67,9 @@ public class Consulta {
 
     public String getContenido() { return contenido; }
     public void setContenido(String contenido) { this.contenido = contenido; }
+
+    public LocalDateTime getFechaEdicion() { return fechaEdicion; }
+    public void setFechaEdicion(LocalDateTime fechaEdicion) { this.fechaEdicion = fechaEdicion; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }

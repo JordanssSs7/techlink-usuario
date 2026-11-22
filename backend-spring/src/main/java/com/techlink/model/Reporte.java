@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "reportes")
 public class Reporte {
 
-    public enum Tipo { USUARIO, SESION }
+    public enum Tipo { USUARIO, SESION, CONSULTA, RESPUESTA }
 
     public enum Motivo { CONDUCTA_INADECUADA, ACOSO, CONTENIDO_OFENSIVO, INCUMPLIMIENTO, SPAM, OTRO }
 
@@ -39,6 +39,16 @@ public class Reporte {
 
     @Column(name = "id_sesion")
     private Integer idSesion;
+
+    // Reportes del foro: la consulta o la respuesta reportada y lo que decía al reportarla.
+    @Column(name = "id_consulta")
+    private Integer idConsulta;
+
+    @Column(name = "id_respuesta")
+    private Integer idRespuesta;
+
+    @Column(name = "contenido_reportado", length = 500)
+    private String contenidoReportado;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -67,6 +77,15 @@ public class Reporte {
 
     public Integer getIdUsuarioReportado() { return idUsuarioReportado; }
     public void setIdUsuarioReportado(Integer idUsuarioReportado) { this.idUsuarioReportado = idUsuarioReportado; }
+
+    public Integer getIdConsulta() { return idConsulta; }
+    public void setIdConsulta(Integer idConsulta) { this.idConsulta = idConsulta; }
+
+    public Integer getIdRespuesta() { return idRespuesta; }
+    public void setIdRespuesta(Integer idRespuesta) { this.idRespuesta = idRespuesta; }
+
+    public String getContenidoReportado() { return contenidoReportado; }
+    public void setContenidoReportado(String contenidoReportado) { this.contenidoReportado = contenidoReportado; }
 
     public Integer getIdSesion() { return idSesion; }
     public void setIdSesion(Integer idSesion) { this.idSesion = idSesion; }

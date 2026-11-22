@@ -3,9 +3,13 @@ package com.techlink.service;
 import com.techlink.dto.ReporteRequest;
 import com.techlink.dto.ReporteResponse;
 import com.techlink.exception.ReglaNegocioException;
+import com.techlink.model.Consulta;
 import com.techlink.model.Reporte;
+import com.techlink.model.Respuesta;
 import com.techlink.model.Sesion;
+import com.techlink.repository.ConsultaRepository;
 import com.techlink.repository.ReporteRepository;
+import com.techlink.repository.RespuestaRepository;
 import com.techlink.repository.SesionRepository;
 import com.techlink.repository.UsuarioRepository;
 import org.springframework.http.HttpStatus;
@@ -24,12 +28,26 @@ public class ReporteService {
     private final SesionRepository sesionRepository;
     private final UsuarioRepository usuarioRepository;
 
+    private final ConsultaRepository consultaRepository;
+    private final RespuestaRepository respuestaRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
     public ReporteService(ReporteRepository reporteRepository,
                           SesionRepository sesionRepository,
-                          UsuarioRepository usuarioRepository) {
+                          UsuarioRepository usuarioRepository,
+                          ConsultaRepository consultaRepository,
+                          RespuestaRepository respuestaRepository) {
         this.reporteRepository = reporteRepository;
         this.sesionRepository = sesionRepository;
         this.usuarioRepository = usuarioRepository;
+        this.consultaRepository = consultaRepository;
+        this.respuestaRepository = respuestaRepository;
+    }
+
+    // Sin foro (solo reportes de usuarios y sesiones): lo usan las pruebas automaticas.
+    public ReporteService(ReporteRepository reporteRepository, SesionRepository sesionRepository,
+                          UsuarioRepository usuarioRepository) {
+        this(reporteRepository, sesionRepository, usuarioRepository, null, null);
     }
 
     @Transactional
@@ -48,7 +66,35 @@ public class ReporteService {
 
         Integer reportado;
         Integer idSesion = null;
-        if (tipo == Reporte.Tipo.SESION) {
+        Integer idConsulta = null;
+        Integer idRespuesta = null;
+        String contenidoReportado = null;
+        if (tipo == Reporte.Tipo.CONSULTA) {
+            if (solicitud.idConsulta() == null || consultaRepository == null) {
+                throw new ReglaNegocioException(HttpStatus.BAD_REQUEST, "Indica la consulta que quieres reportar.");
+            }
+            Consulta consulta = consultaRepository.findByIdAndOcultoFalse(solicitud.idConsulta())
+                    .orElseThrow(() -> new ReglaNegocioException(HttpStatus.NOT_FOUND, "La consulta no existe."));
+            if (consulta.getAutor().getId().equals(usuarioId)) {
+                throw new ReglaNegocioException(HttpStatus.BAD_REQUEST, "No puedes reportar tu propia consulta.");
+            }
+            idConsulta = consulta.getId();
+            reportado = consulta.getAutor().getId();
+            contenidoReportado = recortar(consulta.getTitulo() + ": " + consulta.getContenido());
+        } else if (tipo == Reporte.Tipo.RESPUESTA) {
+            if (solicitud.idRespuesta() == null || respuestaRepository == null) {
+                throw new ReglaNegocioException(HttpStatus.BAD_REQUEST, "Indica la respuesta que quieres reportar.");
+            }
+            Respuesta respuesta = respuestaRepository.findById(solicitud.idRespuesta())
+                    .filter(r -> !r.isOculto())
+                    .orElseThrow(() -> new ReglaNegocioException(HttpStatus.NOT_FOUND, "La respuesta no existe."));
+            if (respuesta.getAutor().getId().equals(usuarioId)) {
+                throw new ReglaNegocioException(HttpStatus.BAD_REQUEST, "No puedes reportar tu propia respuesta.");
+            }
+            idRespuesta = respuesta.getId();
+            reportado = respuesta.getAutor().getId();
+            contenidoReportado = recortar(respuesta.getContenido());
+        } else if (tipo == Reporte.Tipo.SESION) {
             if (solicitud.idSesion() == null) {
                 throw new ReglaNegocioException(HttpStatus.BAD_REQUEST, "Indica la sesión que quieres reportar.");
             }
@@ -72,8 +118,13 @@ public class ReporteService {
             reportado = solicitud.idUsuario();
         }
 
-        if (reporteRepository.existsByIdReportanteAndIdUsuarioReportadoAndIdSesionAndEstado(
-                usuarioId, reportado, idSesion, Reporte.Estado.PENDIENTE)) {
+        boolean repetido = switch (tipo) {
+            case CONSULTA -> reporteRepository.existsByIdReportanteAndIdConsultaAndEstado(usuarioId, idConsulta, Reporte.Estado.PENDIENTE);
+            case RESPUESTA -> reporteRepository.existsByIdReportanteAndIdRespuestaAndEstado(usuarioId, idRespuesta, Reporte.Estado.PENDIENTE);
+            default -> reporteRepository.existsByIdReportanteAndIdUsuarioReportadoAndIdSesionAndEstado(
+                    usuarioId, reportado, idSesion, Reporte.Estado.PENDIENTE);
+        };
+        if (repetido) {
             throw new ReglaNegocioException(HttpStatus.CONFLICT,
                     "Ya enviaste un reporte sobre esto y todavía lo está revisando un administrador.");
         }
@@ -83,11 +134,19 @@ public class ReporteService {
         reporte.setTipo(tipo);
         reporte.setIdUsuarioReportado(reportado);
         reporte.setIdSesion(idSesion);
+        reporte.setIdConsulta(idConsulta);
+        reporte.setIdRespuesta(idRespuesta);
+        reporte.setContenidoReportado(contenidoReportado);
         reporte.setMotivo(motivo);
         reporte.setDescripcion(descripcion);
         reporteRepository.save(reporte);
         return new ReporteResponse(reporte.getId(), tipo.name(), reporte.getEstado().name(),
                 "Recibimos tu reporte. Un administrador lo revisará.");
+    }
+
+    // Lo que decía lo reportado, para guardarlo (el límite de la columna es 500 caracteres).
+    private static String recortar(String texto) {
+        return texto.length() <= 500 ? texto : texto.substring(0, 499) + "…";
     }
 
     private static boolean participa(Sesion sesion, Integer usuarioId) {
@@ -99,7 +158,7 @@ public class ReporteService {
         try {
             return Reporte.Tipo.valueOf(valor == null ? "" : valor.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new ReglaNegocioException(HttpStatus.BAD_REQUEST, "El tipo de reporte debe ser USUARIO o SESION.");
+            throw new ReglaNegocioException(HttpStatus.BAD_REQUEST, "El tipo de reporte debe ser USUARIO, SESION, CONSULTA o RESPUESTA.");
         }
     }
 

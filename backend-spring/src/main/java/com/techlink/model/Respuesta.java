@@ -37,8 +37,16 @@ public class Respuesta {
     @Column(nullable = false)
     private boolean util;
 
+    // Null en una respuesta principal; en una respuesta dentro de un hilo, el id de la respuesta principal.
+    @Column(name = "id_respuesta_padre")
+    private Integer idPadre;
+
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
+
+    // Cuándo la editó su autor (null si nunca).
+    @Column(name = "fecha_edicion")
+    private LocalDateTime fechaEdicion;
 
     @Column(nullable = false, insertable = false, updatable = false)
     private boolean oculto;
@@ -58,8 +66,14 @@ public class Respuesta {
     public String getContenido() { return contenido; }
     public void setContenido(String contenido) { this.contenido = contenido; }
 
+    public Integer getIdPadre() { return idPadre; }
+    public void setIdPadre(Integer idPadre) { this.idPadre = idPadre; }
+
     public boolean isUtil() { return util; }
     public void setUtil(boolean util) { this.util = util; }
+
+    public LocalDateTime getFechaEdicion() { return fechaEdicion; }
+    public void setFechaEdicion(LocalDateTime fechaEdicion) { this.fechaEdicion = fechaEdicion; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
