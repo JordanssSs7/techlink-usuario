@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import './Charlas.css';
 import { useAuth } from '../auth/authContext';
 import Cargando from './Cargando';
+
+// HU-08: la sala virtual (con el resaltado de código y el fondo virtual) se baja solo cuando alguien la abre.
+const Sala = lazy(() => import('./sala/Sala'));
 
 const fechaLarga = (iso) => {
   const [a, m, d] = iso.split('-').map(Number);
@@ -12,7 +15,7 @@ const hora = (t) => String(t).slice(0, 5);
 
 // Una charla: nombre, temática, fecha, hora y enlace (HU-06), con el botón para inscribirse o anular (HU-25).
 // onInscribir y onAnular devuelven el texto de error del servidor, o una cadena vacía si todo salió bien.
-function TarjetaCharla({ charla, onInscribir, onAnular }) {
+function TarjetaCharla({ charla, onInscribir, onAnular, onEntrar }) {
   const [error, setError] = useState('');
   const [trabajando, setTrabajando] = useState(false);
 
@@ -51,7 +54,11 @@ function TarjetaCharla({ charla, onInscribir, onAnular }) {
       {!terminada && (
         <div className="ch-acciones">
           {charla.inscrito ? (
-            <button type="button" className="ch-boton" disabled={trabajando} onClick={() => ejecutar(onAnular)}>Anular inscripción</button>
+            <>
+              {/* HU-08: sala virtual de la charla (videollamada, pantalla compartida y chat con código). */}
+              <button type="button" className="ch-boton primario" onClick={() => onEntrar(charla)}>Entrar a la sala</button>
+              <button type="button" className="ch-boton" disabled={trabajando} onClick={() => ejecutar(onAnular)}>Anular inscripción</button>
+            </>
           ) : (
             <button type="button" className="ch-boton primario" disabled={trabajando} onClick={() => ejecutar(onInscribir)}>
               {trabajando ? 'Inscribiendo…' : 'Inscribirme'}
@@ -73,6 +80,7 @@ export default function Charlas() {
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
   const [version, setVersion] = useState(0);
+  const [salaCharla, setSalaCharla] = useState(null); // HU-08: id de la charla cuya sala virtual está abierta
   const recargar = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
@@ -167,7 +175,7 @@ export default function Charlas() {
             <>
               <h2 className="ch-titulo">Recomendadas para ti</h2>
               <ul className="ch-lista">
-                {recomendadas.recomendadas.map((c) => <TarjetaCharla key={c.id} charla={c} onInscribir={inscribir} onAnular={anular} />)}
+                {recomendadas.recomendadas.map((c) => <TarjetaCharla key={c.id} charla={c} onInscribir={inscribir} onAnular={anular} onEntrar={(ch) => setSalaCharla(ch.id)} />)}
               </ul>
             </>
           )}
@@ -175,7 +183,7 @@ export default function Charlas() {
             <>
               <h2 className="ch-titulo">{recomendadas.recomendadas.length > 0 ? 'Otras charlas próximas' : 'Charlas próximas'}</h2>
               <ul className="ch-lista">
-                {recomendadas.otras.map((c) => <TarjetaCharla key={c.id} charla={c} onInscribir={inscribir} onAnular={anular} />)}
+                {recomendadas.otras.map((c) => <TarjetaCharla key={c.id} charla={c} onInscribir={inscribir} onAnular={anular} onEntrar={(ch) => setSalaCharla(ch.id)} />)}
               </ul>
             </>
           )}
@@ -191,10 +199,11 @@ export default function Charlas() {
             <p className="ch-vacio">Todavía no te inscribiste a ninguna charla. Elige una en la pestaña "Para ti".</p>
           )}
           <ul className="ch-lista">
-            {mias.map((c) => <TarjetaCharla key={c.id} charla={c} onInscribir={inscribir} onAnular={anular} />)}
+            {mias.map((c) => <TarjetaCharla key={c.id} charla={c} onInscribir={inscribir} onAnular={anular} onEntrar={(ch) => setSalaCharla(ch.id)} />)}
           </ul>
         </>
       )}
+      {salaCharla && <Suspense fallback={null}><Sala tipo="charla" id={salaCharla} onCerrar={() => setSalaCharla(null)} /></Suspense>}
     </section>
   );
 }
