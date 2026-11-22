@@ -5,6 +5,7 @@ import BuscarMentor from './BuscarMentor';
 import MisSesiones from './MisSesiones';
 import Foro from './Foro';
 import Charlas from './Charlas';
+import Seguimiento from './Seguimiento';
 import Calendario from './Calendario';
 import CentroAyuda from './CentroAyuda';
 import MentoresRanking from './MentoresRanking';
@@ -34,6 +35,11 @@ const SECCIONES = [
     id: 'sesiones',
     titulo: 'Mis sesiones',
     icono: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17" /></>
+  },
+  {
+    id: 'progreso',
+    titulo: 'Mi progreso',
+    icono: <><path d="M3 20h18" /><path d="M6 20v-6M11 20V9M16 20v-9M21 20V4" /></>
   },
   {
     id: 'charlas',
@@ -212,6 +218,14 @@ export default function PortalEstudiante() {
               <h1>Ser mentor</h1>
               <p className="pt-intro">Si ya llevas varios ciclos, puedes postular para guiar a otros alumnos.</p>
               <PostularMentor />
+            </section>
+          )}
+          {seccion === 'progreso' && (
+            <section key="progreso" className="pt-seccion">
+              <p className="pt-eyebrow">Tu avance</p>
+              <h1>Mi progreso</h1>
+              <p className="pt-intro">Marca las metas de la semana que acuerdas con tu mentor y mira cómo evolucionan tus horas de asesoría y tu rendimiento.</p>
+              <Seguimiento />
             </section>
           )}
           {seccion === 'charlas' && (
