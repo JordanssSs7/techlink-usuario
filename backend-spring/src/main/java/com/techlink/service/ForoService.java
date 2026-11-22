@@ -3,6 +3,8 @@ package com.techlink.service;
 import com.techlink.dto.ForoDtos.Autor;
 import com.techlink.dto.ForoDtos.ConsultaDetalle;
 import com.techlink.dto.ForoDtos.ConsultaResumen;
+import com.techlink.dto.ForoDtos.EdicionConsulta;
+import com.techlink.dto.ForoDtos.EdicionRespuesta;
 import com.techlink.dto.ForoDtos.NuevaConsulta;
 import com.techlink.dto.ForoDtos.NuevaRespuesta;
 import com.techlink.dto.ForoDtos.RespuestaResponse;
@@ -115,6 +117,8 @@ public class ForoService {
         if (!errores.isEmpty()) {
             throw new DatosInvalidosException(errores);
         }
+        // Moderación: un insulto, una amenaza o spam no se publica (422); LlamaLink pide reformularlo.
+        ModeracionTexto.exigirLimpio(titulo, contenido);
         controlarRitmo(usuarioId);
 
         Consulta consulta = new Consulta();
@@ -134,15 +138,92 @@ public class ForoService {
             throw new DatosInvalidosException("contenido",
                     "Escribe una respuesta de entre " + MIN_CONTENIDO + " y " + MAX_CONTENIDO + " caracteres.");
         }
+        ModeracionTexto.exigirLimpio(contenido);
+        Integer padre = padreDeLaRespuesta(consulta, peticion.respuestaPadreId());
         controlarRitmo(usuarioId);
 
         Respuesta respuesta = new Respuesta();
+        respuesta.setIdPadre(padre);
         respuesta.setConsulta(consulta);
         respuesta.setAutor(usuario(usuarioId));
         respuesta.setContenido(contenido);
         respuesta.setFechaCreacion(LocalDateTime.now(reloj));
         respuestaRepository.save(respuesta);
         return aDetalle(usuarioId, consulta);
+    }
+
+    // ---------- editar y eliminar lo propio ----------
+
+    // Quien hizo la consulta puede cambiar su título y su contenido (pasan por las mismas reglas y la moderación que al publicar).
+    @Transactional
+    public ConsultaDetalle editarConsulta(Integer usuarioId, Integer consultaId, EdicionConsulta peticion) {
+        Consulta consulta = visible(consultaId);
+        exigirAutor(consulta.getAutor().getId(), usuarioId, "Solo quien hizo la consulta puede editarla.");
+        String titulo = limpiar(peticion.titulo());
+        String contenido = limpiar(peticion.contenido());
+        Map<String, String> errores = new LinkedHashMap<>();
+        if (titulo.length() < MIN_TITULO || titulo.length() > MAX_TITULO) {
+            errores.put("titulo", "El título debe tener entre " + MIN_TITULO + " y " + MAX_TITULO + " caracteres.");
+        }
+        if (contenido.length() < MIN_CONTENIDO || contenido.length() > MAX_CONTENIDO) {
+            errores.put("contenido", "Cuenta tu duda con entre " + MIN_CONTENIDO + " y " + MAX_CONTENIDO + " caracteres.");
+        }
+        if (!errores.isEmpty()) {
+            throw new DatosInvalidosException(errores);
+        }
+        ModeracionTexto.exigirLimpio(titulo, contenido);
+        consulta.setTitulo(titulo);
+        consulta.setContenido(contenido);
+        consulta.setFechaEdicion(LocalDateTime.now(reloj));
+        return aDetalle(usuarioId, consultaRepository.save(consulta));
+    }
+
+    // Quien hizo la consulta puede eliminarla. Se van con ella sus respuestas.
+    @Transactional
+    public void eliminarConsulta(Integer usuarioId, Integer consultaId) {
+        Consulta consulta = visible(consultaId);
+        exigirAutor(consulta.getAutor().getId(), usuarioId, "Solo quien hizo la consulta puede eliminarla.");
+        consultaRepository.delete(consulta);
+    }
+
+    @Transactional
+    public ConsultaDetalle editarRespuesta(Integer usuarioId, Integer consultaId, Integer respuestaId, EdicionRespuesta peticion) {
+        Consulta consulta = visible(consultaId);
+        Respuesta respuesta = respuestaVisible(consulta, respuestaId);
+        exigirAutor(respuesta.getAutor().getId(), usuarioId, "Solo quien escribió la respuesta puede editarla.");
+        String contenido = limpiar(peticion.contenido());
+        if (contenido.length() < MIN_CONTENIDO || contenido.length() > MAX_CONTENIDO) {
+            throw new DatosInvalidosException("contenido",
+                    "Escribe una respuesta de entre " + MIN_CONTENIDO + " y " + MAX_CONTENIDO + " caracteres.");
+        }
+        ModeracionTexto.exigirLimpio(contenido);
+        respuesta.setContenido(contenido);
+        respuesta.setFechaEdicion(LocalDateTime.now(reloj));
+        respuestaRepository.save(respuesta);
+        return aDetalle(usuarioId, consulta);
+    }
+
+    // Quien escribió una respuesta puede eliminarla. Si es una respuesta principal, se va con las de su hilo.
+    @Transactional
+    public ConsultaDetalle eliminarRespuesta(Integer usuarioId, Integer consultaId, Integer respuestaId) {
+        Consulta consulta = visible(consultaId);
+        Respuesta respuesta = respuestaVisible(consulta, respuestaId);
+        exigirAutor(respuesta.getAutor().getId(), usuarioId, "Solo quien escribió la respuesta puede eliminarla.");
+        respuestaRepository.delete(respuesta);
+        respuestaRepository.flush();
+        return aDetalle(usuarioId, consulta);
+    }
+
+    private Respuesta respuestaVisible(Consulta consulta, Integer respuestaId) {
+        return respuestaRepository.findByConsultaIdAndOcultoFalseOrderByUtilDescFechaCreacionAscIdAsc(consulta.getId()).stream()
+                .filter(r -> r.getId().equals(respuestaId)).findFirst()
+                .orElseThrow(() -> new ReglaNegocioException(HttpStatus.NOT_FOUND, "La respuesta no existe."));
+    }
+
+    private static void exigirAutor(Integer idAutor, Integer usuarioId, String mensaje) {
+        if (!idAutor.equals(usuarioId)) {
+            throw new ReglaNegocioException(HttpStatus.FORBIDDEN, mensaje);
+        }
     }
 
     // Solo el autor de la consulta marca (o desmarca) la respuesta que le sirvió. Solo puede haber una útil.
@@ -158,6 +239,9 @@ public class ForoService {
                 .findFirst()
                 .orElseThrow(() -> new ReglaNegocioException(HttpStatus.NOT_FOUND, "La respuesta no existe."));
 
+        if (elegida.getIdPadre() != null) {
+            throw new ReglaNegocioException(HttpStatus.CONFLICT, "Solo las respuestas principales se pueden marcar como útiles.");
+        }
         boolean yaEraUtil = elegida.isUtil();
         for (Respuesta r : todas) {
             r.setUtil(false);
@@ -165,6 +249,18 @@ public class ForoService {
         elegida.setUtil(!yaEraUtil);
         respuestaRepository.saveAll(todas);
         return aDetalle(usuarioId, consulta);
+    }
+
+    // La respuesta principal a la que se contesta: null si se responde a la consulta. Contestar a una respuesta que ya está dentro de un
+    // hilo la deja en ese mismo hilo (un solo nivel). 404 si esa respuesta no existe, es de otra consulta o fue ocultada.
+    private Integer padreDeLaRespuesta(Consulta consulta, Integer padreId) {
+        if (padreId == null) {
+            return null;
+        }
+        Respuesta destino = respuestaRepository.findByConsultaIdAndOcultoFalseOrderByUtilDescFechaCreacionAscIdAsc(consulta.getId())
+                .stream().filter(r -> r.getId().equals(padreId)).findFirst()
+                .orElseThrow(() -> new ReglaNegocioException(HttpStatus.NOT_FOUND, "La respuesta que quieres contestar no existe."));
+        return destino.getIdPadre() != null ? destino.getIdPadre() : destino.getId();
     }
 
     private Consulta visible(Integer consultaId) {
@@ -186,13 +282,16 @@ public class ForoService {
     }
 
     private ConsultaDetalle aDetalle(Integer usuarioId, Consulta c) {
-        List<RespuestaResponse> respuestas = respuestaRepository
-                .findByConsultaIdAndOcultoFalseOrderByUtilDescFechaCreacionAscIdAsc(c.getId()).stream()
+        List<Respuesta> visibles = respuestaRepository.findByConsultaIdAndOcultoFalseOrderByUtilDescFechaCreacionAscIdAsc(c.getId());
+        java.util.Set<Integer> idsVisibles = visibles.stream().map(Respuesta::getId).collect(java.util.stream.Collectors.toSet());
+        // Si el administrador ocultó una respuesta principal, su hilo también desaparece.
+        List<RespuestaResponse> respuestas = visibles.stream()
+                .filter(r -> r.getIdPadre() == null || idsVisibles.contains(r.getIdPadre()))
                 .map(r -> new RespuestaResponse(r.getId(), r.getContenido(), autor(r.getAutor()), r.getFechaCreacion(),
-                        r.isUtil(), r.getAutor().getId().equals(usuarioId)))
+                        r.isUtil(), r.getAutor().getId().equals(usuarioId), r.getIdPadre(), r.getFechaEdicion() != null))
                 .toList();
         return new ConsultaDetalle(c.getId(), c.getTitulo(), c.getContenido(), c.getCurso().getId(), c.getCurso().getNombre(),
-                autor(c.getAutor()), c.getFechaCreacion(), c.getAutor().getId().equals(usuarioId), respuestas);
+                autor(c.getAutor()), c.getFechaCreacion(), c.getAutor().getId().equals(usuarioId), respuestas, c.getFechaEdicion() != null);
     }
 
     static Autor autor(Usuario u) {

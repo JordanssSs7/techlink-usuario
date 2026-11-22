@@ -51,3 +51,10 @@
 .es-modal { display: flex; flex-direction: column; gap: 0.75rem; width: min(900px, 100%); height: min(90vh, 900px); padding: 1rem; background: #fff; border-radius: 14px; }
 .es-modal-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .es-pdf { flex: 1; width: 100%; border: 1px solid #e3e7ed; border-radius: 8px; background: #f4f4f5; }
+
+/* Avance hacia el certificado (HU-27) */
+.es-avance { display: flex; flex-direction: column; gap: 0.5rem; }
+.es-avance-cab { display: flex; align-items: baseline; gap: 0.5rem; font-size: 15px; }
+.es-avance-cab strong { font-size: 26px; color: #122C4F; }
+.es-barra-avance { height: 12px; overflow: hidden; background: #e3e7ed; border-radius: 999px; }
+.es-barra-avance span { display: block; height: 100%; background: #122C4F; border-radius: 999px; transition: width 0.4s; }

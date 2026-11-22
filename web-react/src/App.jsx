@@ -5,6 +5,7 @@ import ElegirCiclo from './components/ElegirCiclo';
 import IrAlPanel from './components/IrAlPanel';
 import PortalMentor from './components/PortalMentor';
 import PortalEstudiante from './components/PortalEstudiante';
+import VerificarConstancia from './components/VerificarConstancia';
 import { useAuth } from './auth/authContext';
 
 // Sin router por ahora: con sesión, el panel; sin sesión, el login.
@@ -23,6 +24,10 @@ function App() {
       window.history.replaceState(null, '', window.location.pathname);
     }
   }, [saliendo, logout]);
+
+  // HU-27: el código QR de una constancia abre /verificar/<código>, una página pública (sin iniciar sesión).
+  const verificar = window.location.pathname.match(/^\/verificar\/([A-Za-z0-9]{4,20})\/?$/);
+  if (verificar) return <VerificarConstancia codigo={verificar[1]} />;
 
   let pantalla = <LoginForm />;
   if (estaAutenticado && !saliendo) {

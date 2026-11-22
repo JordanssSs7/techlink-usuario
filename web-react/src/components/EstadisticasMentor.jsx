@@ -7,7 +7,6 @@ const OPCIONES_MESES = [6, 12, 24];
 
 const horas = (h) => `${Number.isInteger(h) ? h : String(Number(h.toFixed(2))).replace('.', ',')} h`;
 const nota = (n) => (n == null ? '—' : Number(n).toFixed(1).replace('.', ','));
-const fechaCorta = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
 // "2026-11" -> "nov" (y el año, para la tabla y las descripciones).
 function etiquetaMes(clave, conAnio = false) {
@@ -90,7 +89,8 @@ function GraficoCalificacion({ meses }) {
   );
 }
 
-// HU-27: constancia de horas de mentoría. Muestra lo que dirá, la abre en una vista previa y se descarga en PDF.
+// HU-27: constancia de mentoría. Al llegar a las horas mínimas (50 por defecto) queda pendiente hasta que un administrador la
+// emita; antes de eso se muestra el avance y, ya emitida, se abre en una vista previa y se descarga en PDF.
 function Constancia() {
   const { authFetch } = useAuth();
   const [datos, setDatos] = useState(null);
@@ -108,7 +108,7 @@ function Constancia() {
         if (!response.ok) throw new Error(data?.error || '');
         if (activo) setDatos(data);
       } catch (e) {
-        if (activo) setError(e.message || 'No se pudo cargar la constancia.');
+        if (activo) setError(e.message || 'No se pudo cargar tu constancia.');
       }
     })();
     return () => { activo = false; };
@@ -174,31 +174,38 @@ function Constancia() {
 
   return (
     <section className="es-tarjeta" aria-labelledby="es-constancia">
-      <h2 id="es-constancia" className="es-titulo">Constancia de horas de mentoría</h2>
-      <p className="es-sub">Un documento en PDF con tu nombre, el total de horas y los cursos que atendiste, para acreditar tu participación.</p>
+      <h2 id="es-constancia" className="es-titulo">Constancia de mentoría</h2>
+      <p className="es-sub">Al completar {datos ? horas(datos.horasMinimas) : 'varias'} horas de mentoría, un administrador de TechLink emite tu constancia en PDF y te avisamos.</p>
       {error && <p className="es-error" role="alert">{error}</p>}
       {!datos && !error && <Cargando texto="Preparando tu constancia…" />}
 
-      {datos && !datos.puedeEmitir && (
-        <p className="es-vacio">Todavía no tienes sesiones completadas. Cuando termines tu primera sesión podrás descargar tu constancia.</p>
+      {datos && (
+        <div className="es-avance">
+          <div className="es-avance-cab">
+            <strong>{horas(datos.horasTotales)}</strong>
+            <span>de {horas(datos.horasMinimas)}</span>
+          </div>
+          <div className="es-barra-avance" role="progressbar" aria-valuemin={0} aria-valuemax={datos.horasMinimas}
+            aria-valuenow={Math.min(datos.horasTotales, datos.horasMinimas)} aria-label="Avance hacia la constancia">
+            <span style={{ width: `${Math.min(100, (datos.horasTotales / datos.horasMinimas) * 100)}%` }} />
+          </div>
+          {datos.estado === 'EMITIDA' && <p className="es-sub">¡Lo lograste! Tu constancia ya está emitida: puedes verla y descargarla.</p>}
+          {datos.estado === 'PENDIENTE' && (
+            <p className="es-sub" role="status">
+              ¡Cumpliste las horas! Un administrador revisará y emitirá tu constancia; te avisaremos en tus notificaciones cuando esté lista.
+            </p>
+          )}
+          {datos.estado === 'NO_ELEGIBLE' && (
+            <p className="es-sub">Te faltan {horas(Math.max(0, datos.horasMinimas - datos.horasTotales))} para que se pueda emitir tu constancia.</p>
+          )}
+        </div>
       )}
 
-      {datos?.puedeEmitir && (
-        <>
-          <p className="es-resumen-constancia">
-            <strong>{horas(datos.horasTotales)}</strong> en <strong>{datos.sesionesCompletadas}</strong> {datos.sesionesCompletadas === 1 ? 'sesión' : 'sesiones'}
-            {' · '}del {fechaCorta(datos.desde)} al {fechaCorta(datos.hasta)}
-          </p>
-          <ul className="es-cursos">
-            {datos.cursos.map((c) => (
-              <li key={c.curso}><span>{c.curso}</span><span>{c.sesiones} {c.sesiones === 1 ? 'sesión' : 'sesiones'} · {horas(c.horas)}</span></li>
-            ))}
-          </ul>
-          <div className="es-acciones">
-            <button type="button" className="es-boton" onClick={verVistaPrevia} disabled={ocupado}>Ver vista previa</button>
-            <button type="button" className="es-boton primario" onClick={descargar} disabled={ocupado}>Descargar PDF</button>
-          </div>
-        </>
+      {datos?.puedeDescargar && (
+        <div className="es-acciones">
+          <button type="button" className="es-boton" onClick={verVistaPrevia} disabled={ocupado}>Ver vista previa</button>
+          <button type="button" className="es-boton primario" onClick={descargar} disabled={ocupado}>Descargar PDF</button>
+        </div>
       )}
 
       {vista && (

@@ -147,3 +147,8 @@
 }
 @media (max-width: 560px) { .cu-filtros { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .cu-mentor:hover { transform: none; } }
+/* Indicaciones para sacar el comprobante de notas (HU-03) */
+.cu-pasos { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.9rem 1rem; font-size: 14px; background: #FBF9E4; border-left: 4px solid #122C4F; border-radius: 10px; }
+.cu-pasos ol { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.cu-pasos p { margin: 0; color: #5f6673; }
+.cu-pasos a { color: #122C4F; font-weight: 700; }

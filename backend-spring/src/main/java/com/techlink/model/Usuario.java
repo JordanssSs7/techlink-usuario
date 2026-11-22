@@ -64,7 +64,7 @@ public class Usuario {
 
     @ElementCollection
     @CollectionTable(name = "usuario_intereses", joinColumns = @JoinColumn(name = "id_usuario"))
-    @Column(name = "interes", nullable = false, length = 40)
+    @Column(name = "interes", nullable = false, length = 50)
     private Set<String> intereses = new LinkedHashSet<>();
 
     public Usuario() {

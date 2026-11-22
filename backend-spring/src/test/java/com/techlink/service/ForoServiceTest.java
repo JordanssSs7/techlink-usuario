@@ -120,6 +120,219 @@ class ForoServiceTest {
         return assertThrows(DatosInvalidosException.class, accion::run);
     }
 
+    // ---------- hilos de respuestas y moderación ----------
+
+    @Test
+    void unaRespuestaPuedeContestarseDentroDeUnHilo() {
+        respuesta(1, OTRO, "Un INNER JOIN solo trae las filas que coinciden.");
+        when(respuestaRepository.save(any(Respuesta.class))).thenAnswer(i -> {
+            Respuesta r = i.getArgument(0);
+            r.setId(2);
+            respuestas.add(r);
+            return r;
+        });
+
+        servicio.responder(AUTOR, 10, new NuevaRespuesta("¡Gracias, ahora lo entiendo!", 1));
+
+        assertEquals(1, respuestas.get(1).getIdPadre());
+    }
+
+    @Test
+    void contestarAUnaRespuestaDeUnHiloLaDejaEnElMismoHilo() {
+        respuesta(1, OTRO, "Respuesta principal");
+        Respuesta hija = respuesta(2, AUTOR, "Respuesta dentro del hilo");
+        hija.setIdPadre(1);
+        when(respuestaRepository.save(any(Respuesta.class))).thenAnswer(i -> {
+            Respuesta r = i.getArgument(0);
+            r.setId(3);
+            respuestas.add(r);
+            return r;
+        });
+
+        servicio.responder(OTRO, 10, new NuevaRespuesta("@Ana de nada", 2));
+
+        assertEquals(1, respuestas.get(2).getIdPadre(), "un solo nivel: queda en el hilo de la respuesta principal");
+    }
+
+    @Test
+    void contestarAUnaRespuestaQueNoExisteEsNoEncontrado() {
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> servicio.responder(AUTOR, 10, new NuevaRespuesta("Hola, gracias por la ayuda", 999)));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
+    }
+
+    @Test
+    void sinPadreLaRespuestaEsPrincipal() {
+        when(respuestaRepository.save(any(Respuesta.class))).thenAnswer(i -> i.getArgument(0));
+
+        servicio.responder(AUTOR, 10, new NuevaRespuesta("Una respuesta principal a la consulta"));
+
+        ArgumentCaptor<Respuesta> guardada = ArgumentCaptor.forClass(Respuesta.class);
+        verify(respuestaRepository).save(guardada.capture());
+        assertNull(guardada.getValue().getIdPadre());
+    }
+
+    @Test
+    void elDetalleTraeElPadreDeCadaRespuesta() {
+        respuesta(1, OTRO, "Principal");
+        Respuesta hija = respuesta(2, AUTOR, "Hija");
+        hija.setIdPadre(1);
+
+        ConsultaDetalle d = servicio.detalle(AUTOR, 10);
+
+        assertNull(d.respuestas().get(0).padreId());
+        assertEquals(1, d.respuestas().get(1).padreId());
+    }
+
+    @Test
+    void siSeOcultaLaRespuestaPrincipalSuHiloDesaparece() {
+        Respuesta principal = respuesta(1, OTRO, "Principal");
+        Respuesta hija = respuesta(2, AUTOR, "Hija");
+        hija.setIdPadre(1);
+        org.springframework.test.util.ReflectionTestUtils.setField(principal, "oculto", true);
+
+        ConsultaDetalle d = servicio.detalle(AUTOR, 10);
+
+        assertTrue(d.respuestas().isEmpty());
+    }
+
+    @Test
+    void unaRespuestaDeUnHiloNoSePuedeMarcarComoUtil() {
+        respuesta(1, OTRO, "Principal");
+        Respuesta hija = respuesta(2, OTRO, "Hija");
+        hija.setIdPadre(1);
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class, () -> servicio.marcarUtil(AUTOR, 10, 2));
+
+        assertEquals(HttpStatus.CONFLICT, error.getEstado());
+    }
+
+    @Test
+    void unaRespuestaConInsultoNoSePublicaYNoSeGuarda() {
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> servicio.responder(AUTOR, 10, new NuevaRespuesta("No sirves, eres un idiota")));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, error.getEstado());
+        assertTrue(error.getMessage().contains("aprendemos juntos"));
+        verify(respuestaRepository, never()).save(any());
+    }
+
+    @Test
+    void unaConsultaConInsultoNoSePublica() {
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> servicio.crear(AUTOR, new NuevaConsulta(4, "Qué mierda de tarea", "No entiendo la diferencia entre INNER y LEFT.")));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, error.getEstado());
+        verify(consultaRepository, never()).save(any());
+    }
+
+    // ---------- editar y eliminar lo propio ----------
+
+    @Test
+    void elAutorEditaSuConsultaYQuedaMarcadaComoEditada() {
+        when(consultaRepository.save(any(Consulta.class))).thenAnswer(i -> i.getArgument(0));
+
+        ConsultaDetalle d = servicio.editarConsulta(AUTOR, 10, new com.techlink.dto.ForoDtos.EdicionConsulta(
+                "  Nuevo título más claro ", "Ahora explico mejor mi duda sobre INNER y LEFT JOIN."));
+
+        assertEquals("Nuevo título más claro", consulta.getTitulo());
+        assertEquals("Ahora explico mejor mi duda sobre INNER y LEFT JOIN.", consulta.getContenido());
+        assertNotNull(consulta.getFechaEdicion());
+        assertTrue(d.editada());
+    }
+
+    @Test
+    void unaConsultaSinEditarNoApareceComoEditada() {
+        assertFalse(servicio.detalle(AUTOR, 10).editada());
+    }
+
+    @Test
+    void otroUsuarioNoPuedeEditarLaConsulta() {
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class, () -> servicio.editarConsulta(OTRO, 10,
+                new com.techlink.dto.ForoDtos.EdicionConsulta("Título cambiado", "Contenido cambiado por otra persona.")));
+
+        assertEquals(HttpStatus.FORBIDDEN, error.getEstado());
+        verify(consultaRepository, never()).save(any());
+    }
+
+    @Test
+    void laEdicionDeUnaConsultaPasaPorLasMismasReglasQueAlPublicar() {
+        assertTrue(invalido(() -> servicio.editarConsulta(AUTOR, 10, new com.techlink.dto.ForoDtos.EdicionConsulta("Hi", "corto")))
+                .getCampos().containsKey("titulo"));
+    }
+
+    @Test
+    void laEdicionDeUnaConsultaPasaPorLaModeracion() {
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class, () -> servicio.editarConsulta(AUTOR, 10,
+                new com.techlink.dto.ForoDtos.EdicionConsulta("Un título normal", "Esta tarea es una mierda total")));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, error.getEstado());
+        assertEquals("¿Cómo funciona un JOIN?", consulta.getTitulo(), "no se cambia nada");
+    }
+
+    @Test
+    void elAutorEliminaSuConsulta() {
+        servicio.eliminarConsulta(AUTOR, 10);
+
+        verify(consultaRepository).delete(consulta);
+    }
+
+    @Test
+    void otroUsuarioNoPuedeEliminarLaConsulta() {
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class, () -> servicio.eliminarConsulta(OTRO, 10));
+
+        assertEquals(HttpStatus.FORBIDDEN, error.getEstado());
+        verify(consultaRepository, never()).delete(any(Consulta.class));
+    }
+
+    @Test
+    void elAutorEditaSuRespuesta() {
+        Respuesta r = respuesta(1, OTRO, "Respuesta original");
+        when(respuestaRepository.save(any(Respuesta.class))).thenAnswer(i -> i.getArgument(0));
+
+        ConsultaDetalle d = servicio.editarRespuesta(OTRO, 10, 1, new com.techlink.dto.ForoDtos.EdicionRespuesta("Respuesta corregida y completa"));
+
+        assertEquals("Respuesta corregida y completa", r.getContenido());
+        assertTrue(d.respuestas().get(0).editada());
+    }
+
+    @Test
+    void nadieMasEditaOEliminaUnaRespuestaAjena() {
+        respuesta(1, OTRO, "Respuesta de Lucía");
+
+        assertEquals(HttpStatus.FORBIDDEN, assertThrows(ReglaNegocioException.class, () -> servicio.editarRespuesta(AUTOR, 10, 1,
+                new com.techlink.dto.ForoDtos.EdicionRespuesta("La cambio yo sin ser el autor"))).getEstado());
+        assertEquals(HttpStatus.FORBIDDEN, assertThrows(ReglaNegocioException.class,
+                () -> servicio.eliminarRespuesta(AUTOR, 10, 1)).getEstado());
+        verify(respuestaRepository, never()).delete(any(Respuesta.class));
+    }
+
+    @Test
+    void elAutorEliminaSuRespuesta() {
+        Respuesta r = respuesta(1, OTRO, "Respuesta que se elimina");
+
+        servicio.eliminarRespuesta(OTRO, 10, 1);
+
+        verify(respuestaRepository).delete(r);
+    }
+
+    @Test
+    void editarUnaRespuestaQueNoExisteEsNoEncontrado() {
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ReglaNegocioException.class, () -> servicio.editarRespuesta(AUTOR, 10, 99,
+                new com.techlink.dto.ForoDtos.EdicionRespuesta("Texto de reemplazo válido"))).getEstado());
+    }
+
+    @Test
+    void laEdicionDeUnaRespuestaPasaPorLaModeracion() {
+        respuesta(1, OTRO, "Respuesta original");
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class, () -> servicio.editarRespuesta(OTRO, 10, 1,
+                new com.techlink.dto.ForoDtos.EdicionRespuesta("eres un idiota por preguntar eso")));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, error.getEstado());
+    }
+
     // ---------- crear ----------
 
     @Test
@@ -155,11 +368,16 @@ class ForoServiceTest {
                 .getCampos().containsKey("cursoId"));
     }
 
+    // Texto de exactamente n caracteres que no parece spam (la moderación bloquea una misma letra repetida muchas veces).
+    private static String largo(int n) {
+        return "lorem ipsum ".repeat(n / 12 + 1).substring(0, n - 1) + "x";
+    }
+
     @Test
     void ellimiteDeLargoSeRespeta() {
-        assertDoesNotThrow(() -> servicio.crear(AUTOR, new NuevaConsulta(4, "a".repeat(150), "b".repeat(2000))));
-        assertTrue(invalido(() -> servicio.crear(AUTOR, new NuevaConsulta(4, "a".repeat(151), "b".repeat(20)))).getCampos().containsKey("titulo"));
-        assertTrue(invalido(() -> servicio.crear(AUTOR, new NuevaConsulta(4, "a".repeat(20), "b".repeat(2001)))).getCampos().containsKey("contenido"));
+        assertDoesNotThrow(() -> servicio.crear(AUTOR, new NuevaConsulta(4, largo(150), largo(2000))));
+        assertTrue(invalido(() -> servicio.crear(AUTOR, new NuevaConsulta(4, largo(151), largo(20)))).getCampos().containsKey("titulo"));
+        assertTrue(invalido(() -> servicio.crear(AUTOR, new NuevaConsulta(4, largo(20), largo(2001)))).getCampos().containsKey("contenido"));
     }
 
     @Test

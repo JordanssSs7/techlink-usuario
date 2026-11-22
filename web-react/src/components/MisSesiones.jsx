@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import './MisSesiones.css';
 import { useAuth } from '../auth/authContext';
 import AgendarSesion from './AgendarSesion';
 import RecursosSesion from './RecursosSesion';
 import Cargando from './Cargando';
 import ReportarModal from './ReportarModal';
+
+// HU-08: la sala virtual (con el resaltado de código y el fondo virtual) se baja solo cuando alguien la abre.
+const Sala = lazy(() => import('./sala/Sala'));
 
 const FILTROS = [
   { valor: '', texto: 'Todas' },
@@ -65,6 +68,7 @@ export default function MisSesiones() {
   const [sesiones, setSesiones] = useState(null);
   const [error, setError] = useState('');
   const [accion, setAccion] = useState(null); // { tipo: 'calificar' | 'cancelar' | 'reprogramar' | 'nota', sesion }
+  const [salaId, setSalaId] = useState(null); // HU-08: id de la sesión cuya sala virtual está abierta
   const [aviso, setAviso] = useState('');
 
   // "version" sube cada vez que hay que volver a pedir el historial (por ejemplo, después de cancelar o calificar).
@@ -165,8 +169,11 @@ export default function MisSesiones() {
               )}
 
               <div className="ms-acciones">
+                {s.estado === 'PROGRAMADA' && (
+                  <button type="button" className="ms-boton primario" onClick={() => setSalaId(s.id)}>Entrar a la sala</button>
+                )}
                 {s.estado === 'PROGRAMADA' && s.enlaceReunion && (
-                  <a className="ms-boton primario" href={s.enlaceReunion} target="_blank" rel="noreferrer">Unirme a la reunión</a>
+                  <a className="ms-boton" href={s.enlaceReunion} target="_blank" rel="noreferrer">Abrir enlace de la reunión</a>
                 )}
                 {s.puedeCalificar && (
                   <button type="button" className="ms-boton primario" onClick={() => setAccion({ tipo: 'calificar', sesion: s })}>Calificar</button>
@@ -202,6 +209,7 @@ export default function MisSesiones() {
           <FormCalificar sesion={accion.sesion} onCerrar={cerrar} onListo={() => terminar('¡Gracias por tu calificación!')} />
         </Modal>
       )}
+      {salaId && <Suspense fallback={null}><Sala tipo="sesion" id={salaId} onCerrar={() => setSalaId(null)} /></Suspense>}
       {accion?.tipo === 'cancelar' && (
         <Modal titulo="Cancelar sesión" onCerrar={cerrar}>
           <ConfirmarCancelacion sesion={accion.sesion} onCerrar={cerrar} onListo={() => terminar('La sesión se canceló y avisamos al mentor.')} />

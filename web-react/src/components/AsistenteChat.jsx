@@ -82,11 +82,31 @@ function BotonRiel({ etiqueta, onClick, clase = '', children }) {
 // Posición del botón flotante (el usuario puede arrastrarlo). null = posición por defecto.
 const CLAVE_POSICION = 'techlink_chat_posicion';
 const TAM_BOTON = 72;
+// Zona de la pantalla donde se puede dejar el asistente: no se pone encima de la barra lateral ni del encabezado de la
+// página (se miden en pantalla, así que sigue funcionando si cambian de tamaño o se esconden en el celular).
+function areaPermitida(margen) {
+  let minX = margen;
+  let minY = margen;
+  const lateral = document.querySelector('.pt-lateral');
+  if (lateral) {
+    const r = lateral.getBoundingClientRect();
+    if (r.width > 0 && r.right > 0) minX = Math.max(minX, r.right + margen);
+  }
+  for (const selector of ['.pt-movil', '.pm-barra']) {
+    const barra = document.querySelector(selector);
+    if (barra) {
+      const r = barra.getBoundingClientRect();
+      if (r.height > 0 && r.bottom > 0 && r.top < 80) minY = Math.max(minY, r.bottom + margen);
+    }
+  }
+  return { minX, minY };
+}
 function limitar(x, y) {
   const m = 12;
+  const { minX, minY } = areaPermitida(m);
   return {
-    x: Math.min(Math.max(m, x), window.innerWidth - TAM_BOTON - m),
-    y: Math.min(Math.max(m, y), window.innerHeight - TAM_BOTON - m)
+    x: Math.min(Math.max(minX, x), Math.max(minX, window.innerWidth - TAM_BOTON - m)),
+    y: Math.min(Math.max(minY, y), Math.max(minY, window.innerHeight - TAM_BOTON - m))
   };
 }
 // Tamaño del chat pequeño (igual que en el CSS) y cómo mantenerlo dentro de la pantalla.
@@ -95,9 +115,10 @@ function tamanoCompacto() {
 }
 function limitarVentana(x, y, t) {
   const m = 8;
+  const { minX, minY } = areaPermitida(m);
   return {
-    x: Math.min(Math.max(m, x), window.innerWidth - t.w - m),
-    y: Math.min(Math.max(m, y), window.innerHeight - t.h - m)
+    x: Math.min(Math.max(minX, x), Math.max(minX, window.innerWidth - t.w - m)),
+    y: Math.min(Math.max(minY, y), Math.max(minY, window.innerHeight - t.h - m))
   };
 }
 function cargarPosicion() {
@@ -165,7 +186,8 @@ const ESTADOS_VOZ = {
 
 // HU-04: asistente de chat grande (historial de conversaciones, escritura y voz).
 // El estudiante conversa con sus palabras; el agente entiende cursos y horario y, cuando los tiene, muestra el top 3.
-export default function AsistenteChat() {
+// contexto: la sección donde está el usuario (en el foro el aviso del botón le recuerda cuidar lo que publica). rol: ESTUDIANTE o MENTOR.
+export default function AsistenteChat({ contexto = '', rol = 'ESTUDIANTE' } = {}) {
   const { authFetch, usuario } = useAuth();
   const idUsuario = usuario?.id ?? usuario?.correoInstitucional ?? 'anonimo';
   const primerNombre = (usuario?.nombres || '').split(' ')[0];
@@ -201,6 +223,8 @@ export default function AsistenteChat() {
   const campoRef = useRef(null);
   const buscarRef = useRef(null);
   const arrastre = useRef(null); // { dx, dy, x0, y0, movido } mientras se arrastra el botón
+  // Dónde estaba el botón al abrir el chat (null = en su lugar de siempre): al cerrar el chat vuelve exactamente ahí.
+  const origenBoton = useRef(undefined);
   const seArrastro = useRef(false);
   const ventanaRef = useRef(null);
   const arrastreVentana = useRef(null);
@@ -235,13 +259,10 @@ export default function AsistenteChat() {
     terminarVoz();
     cancelarDictado.current();
     setDictando(false);
-    // El botón flotante reaparece donde estaba el chat (esquina inferior derecha de la ventana).
-    const v = ventanaRef.current;
-    if (v && v.classList.contains('compacto') && window.innerWidth > 820) {
-      const r = v.getBoundingClientRect();
-      const p = limitar(r.right - TAM_BOTON, r.bottom - TAM_BOTON);
-      setPosicion(p);
-      guardarPosicion(p);
+    // El botón flotante reaparece exactamente donde estaba antes de abrir el chat, aunque se haya movido la ventana.
+    if (origenBoton.current !== undefined) {
+      setPosicion(origenBoton.current);
+      origenBoton.current = undefined;
     }
     setAbierto(false);
   }, [terminarVoz]);
@@ -265,6 +286,13 @@ export default function AsistenteChat() {
     document.addEventListener('mousedown', fuera);
     return () => document.removeEventListener('mousedown', fuera);
   }, [menuChat]);
+
+  // Al cargar la página, una posición guardada se vuelve a ajustar con la barra lateral ya dibujada (al leerla de la memoria
+  // todavía no existía y no se podía medir).
+  useEffect(() => {
+    const cuadro = requestAnimationFrame(() => setPosicion((p) => (p ? limitar(p.x, p.y) : p)));
+    return () => cancelAnimationFrame(cuadro);
+  }, []);
 
   // Si la ventana se achica, el botón flotante vuelve a quedar dentro de la pantalla.
   useEffect(() => {
@@ -346,6 +374,7 @@ export default function AsistenteChat() {
   };
   const alClicBoton = () => {
     if (seArrastro.current) { seArrastro.current = false; return; }
+    origenBoton.current = posicion;
     // El chat se abre junto al botón: su esquina inferior derecha coincide con la del botón.
     if (posicion) {
       const t = tamanoCompacto();
@@ -833,9 +862,16 @@ export default function AsistenteChat() {
           style={posicion ? { left: posicion.x, top: posicion.y } : undefined}
         >
           {/* El aviso solo aparece al pasar el mouse por el botón */}
-          <p className="ac-aviso" aria-hidden="true">
-            ¿Necesitas ayuda?<br /><strong>Pregunta a LlamaLink</strong>
-          </p>
+          {contexto === 'foro' ? (
+            <p className="ac-aviso" aria-hidden="true">
+              Cuidado con lo que publicas<br />
+              <strong>{rol === 'MENTOR' ? 'Eres ejemplo para los estudiantes 💙' : 'En TechLink aprendemos con respeto 💙'}</strong>
+            </p>
+          ) : (
+            <p className="ac-aviso" aria-hidden="true">
+              ¿Necesitas ayuda?<br /><strong>Pregunta a LlamaLink</strong>
+            </p>
+          )}
           <button
             type="button"
             className="ac-boton"

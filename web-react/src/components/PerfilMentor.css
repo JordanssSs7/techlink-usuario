@@ -1,6 +1,10 @@
 /* Perfil del mentor (HU-05). Reutiliza las variables y los campos de LoginForm.css. */
 .mentor-page { justify-content: center; }
 
+/* Dentro del portal del mentor: el formulario va en una tarjeta, sin ocupar toda la pantalla. */
+.login-page.mentor-perfil { display: block; min-height: 0; max-width: 720px; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid #e4e4e7; border-radius: 20px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
+.mentor-perfil .mentor-caja { max-width: none; }
+
 .mentor-panel {
   width: 100%;
   display: flex;

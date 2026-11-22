@@ -128,7 +128,7 @@ class PerfilServiceTest {
         assertEquals(3, e.getCampos().size());
         assertTrue(e.getCampos().containsKey("descripcion"));
         assertTrue(e.getCampos().containsKey("ciclo"));
-        assertTrue(e.getCampos().get("intereses").contains("entre 2 y 40"));
+        assertTrue(e.getCampos().get("intereses").contains("entre 2 y 50"));
     }
 
     @Test

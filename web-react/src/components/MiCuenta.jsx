@@ -7,6 +7,7 @@ import Cargando from './Cargando';
 
 const MAX_DESCRIPCION = 300;
 const MAX_INTERESES = 8;
+const MAX_INTERES = 50; // caracteres por interés
 const MAX_FOTO = 2 * 1024 * 1024;
 const TIPOS_FOTO = ['image/jpeg', 'image/png'];
 const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
@@ -184,9 +185,9 @@ export default function MiCuenta() {
           <input
             id="cu-interes"
             type="text"
-            maxLength={40}
+            maxLength={MAX_INTERES}
             value={nuevo}
-            placeholder="Ej: Java, inteligencia artificial…"
+            placeholder="Ej: Soy bueno en JavaScript, me interesa la IA…"
             onChange={(e) => setNuevo(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregarInteres(); } }}
           />
@@ -202,7 +203,10 @@ export default function MiCuenta() {
             ))}
           </ul>
         )}
-        <p className="cu-ayuda">Hasta {MAX_INTERESES} intereses.</p>
+        <p className="cu-ayuda">
+          Hasta {MAX_INTERESES} intereses, de hasta {MAX_INTERES} caracteres cada uno. Puedes escribir frases como «Soy bueno en Python» o «Me interesa la inteligencia artificial».
+          <span className="cu-contador"> {nuevo.length}/{MAX_INTERES}</span>
+        </p>
         {errores.intereses && <p className="cu-campo-error" role="alert">{errores.intereses}</p>}
       </section>
 

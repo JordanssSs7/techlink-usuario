@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 // Logica de negocio de autenticacion (HU-02): login con Google para alumnos y mentores, login con contraseña para
 // administradores, y eleccion del ciclo en el primer ingreso. No hay registro con contraseña.
@@ -31,9 +32,8 @@ public class AuthService {
 
     private static final String ROL_ESTUDIANTE = "ESTUDIANTE";
     private static final String ROL_ADMIN = "ADMIN";
-    // HU-02: reglas del bloqueo (3 intentos fallidos = 15 minutos) y mensaje del login.
-    private static final int MAX_INTENTOS_FALLIDOS = 3;
-    private static final long MINUTOS_BLOQUEO = 15;
+    // HU-02: mensaje del login. Los intentos máximos y los minutos de bloqueo (por defecto 3 y 15) los configura el
+    // administrador (HU-60) y se leen en cada inicio de sesión.
     private static final String MENSAJE_CREDENCIALES = "Correo o contraseña incorrectos";
 
     private final UsuarioRepository usuarioRepository;
@@ -46,6 +46,8 @@ public class AuthService {
     // a mano en la base de datos) pueden entrar con contraseña. Apagado por defecto: en el sistema real todos
     // los alumnos y mentores entran solo con Google.
     private final boolean cuentasDePrueba;
+    // HU-60: parámetros de seguridad vigentes (intentos máximos y minutos de bloqueo).
+    private final Supplier<ParametrosSeguridadService.Parametros> parametros;
 
     public AuthService(UsuarioRepository usuarioRepository,
                        EstudianteRepository estudianteRepository,
@@ -57,6 +59,18 @@ public class AuthService {
                 googleTokenVerifier, false);
     }
 
+    // Con los parametros predeterminados (3 intentos, 15 minutos): lo usan las pruebas automaticas.
+    public AuthService(UsuarioRepository usuarioRepository,
+                       EstudianteRepository estudianteRepository,
+                       RolRepository rolRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService,
+                       GoogleTokenVerifier googleTokenVerifier,
+                       boolean cuentasDePrueba) {
+        this(usuarioRepository, estudianteRepository, rolRepository, passwordEncoder, jwtService,
+                googleTokenVerifier, cuentasDePrueba, () -> ParametrosSeguridadService.Parametros.PREDETERMINADOS);
+    }
+
     // Spring inyecta automaticamente las dependencias por constructor.
     @org.springframework.beans.factory.annotation.Autowired
     public AuthService(UsuarioRepository usuarioRepository,
@@ -65,7 +79,21 @@ public class AuthService {
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        GoogleTokenVerifier googleTokenVerifier,
-                       @org.springframework.beans.factory.annotation.Value("${app.auth.cuentas-de-prueba:false}") boolean cuentasDePrueba) {
+                       @org.springframework.beans.factory.annotation.Value("${app.auth.cuentas-de-prueba:false}") boolean cuentasDePrueba,
+                       ParametrosSeguridadService parametrosService) {
+        this(usuarioRepository, estudianteRepository, rolRepository, passwordEncoder, jwtService,
+                googleTokenVerifier, cuentasDePrueba, parametrosService::obtener);
+    }
+
+    AuthService(UsuarioRepository usuarioRepository,
+                EstudianteRepository estudianteRepository,
+                RolRepository rolRepository,
+                PasswordEncoder passwordEncoder,
+                JwtService jwtService,
+                GoogleTokenVerifier googleTokenVerifier,
+                boolean cuentasDePrueba,
+                Supplier<ParametrosSeguridadService.Parametros> parametros) {
+        this.parametros = parametros;
         this.cuentasDePrueba = cuentasDePrueba;
         this.usuarioRepository = usuarioRepository;
         this.estudianteRepository = estudianteRepository;
@@ -117,12 +145,14 @@ public class AuthService {
             throw new CuentaInactivaException("La cuenta está inactiva");
         }
 
-        // 4. Contraseña incorrecta: se cuenta el intento y al tercero se bloquea 15 minutos.
+        // 4. Contraseña incorrecta: se cuenta el intento y al llegar al máximo configurado (3 por defecto) se bloquea
+        //    los minutos configurados (15 por defecto). HU-60: ambos valores los cambia el administrador.
         if (!passwordEncoder.matches(request.password(), usuario.getContrasenaHash())) {
+            ParametrosSeguridadService.Parametros vigentes = parametros.get();
             int intentos = usuario.getIntentosFallidos() + 1;
-            if (intentos >= MAX_INTENTOS_FALLIDOS) {
+            if (intentos >= vigentes.maxIntentos()) {
                 usuario.setIntentosFallidos(0);
-                usuario.setBloqueadoHasta(ahora.plusMinutes(MINUTOS_BLOQUEO));
+                usuario.setBloqueadoHasta(ahora.plusMinutes(vigentes.minutosBloqueo()));
                 usuarioRepository.save(usuario);
                 throw bloqueada(usuario, ahora);
             }

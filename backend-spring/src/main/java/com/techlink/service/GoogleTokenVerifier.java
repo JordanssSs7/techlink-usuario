@@ -21,13 +21,12 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 // HU-02 (Google): canjea el codigo de Google por el ID token, lo verifica (firma, emisor, audiencia, vencimiento)
 // y comprueba que el correo este verificado y sea del dominio institucional.
 @Component
 public class GoogleTokenVerifier {
-
-    private static final String DOMINIO_INSTITUCIONAL = "@tecsup.edu.pe";
 
     // Datos del usuario que se toman del token de Google.
     public record GoogleUsuario(String googleId, String correo, String nombres, String apellidos) {
@@ -37,6 +36,8 @@ public class GoogleTokenVerifier {
     private final String clientSecret;
     private final String tokenUri;
     private final String jwksUri;
+    // HU-60: el dominio permitido lo configura el administrador y se consulta en cada inicio de sesión.
+    private final Supplier<ParametrosSeguridadService.Parametros> parametros;
     private NimbusJwtDecoder decoder;
 
     // Las direcciones de Google se pueden cambiar por propiedades (solo se hace en las pruebas automaticas).
@@ -44,11 +45,23 @@ public class GoogleTokenVerifier {
     public GoogleTokenVerifier(@Value("${app.google.client-id:}") String clientId,
                                @Value("${app.google.client-secret:}") String clientSecret,
                                @Value("${app.google.token-uri:https://oauth2.googleapis.com/token}") String tokenUri,
-                               @Value("${app.google.jwks-uri:https://www.googleapis.com/oauth2/v3/certs}") String jwksUri) {
+                               @Value("${app.google.jwks-uri:https://www.googleapis.com/oauth2/v3/certs}") String jwksUri,
+                               ParametrosSeguridadService parametrosService) {
+        this(clientId, clientSecret, tokenUri, jwksUri, parametrosService::obtener);
+    }
+
+    // Con el dominio predeterminado (tecsup.edu.pe): lo usan las pruebas automaticas.
+    public GoogleTokenVerifier(String clientId, String clientSecret, String tokenUri, String jwksUri) {
+        this(clientId, clientSecret, tokenUri, jwksUri, () -> ParametrosSeguridadService.Parametros.PREDETERMINADOS);
+    }
+
+    GoogleTokenVerifier(String clientId, String clientSecret, String tokenUri, String jwksUri,
+                        Supplier<ParametrosSeguridadService.Parametros> parametros) {
         this.clientId = sinEspacios(clientId);
         this.clientSecret = sinEspacios(clientSecret);
         this.tokenUri = tokenUri;
         this.jwksUri = jwksUri;
+        this.parametros = parametros;
     }
 
     // El Client ID y el secreto nunca llevan espacios: si se copiaron de un chat o de una pagina web puede colarse
@@ -109,8 +122,9 @@ public class GoogleTokenVerifier {
         if (correo == null || !correoVerificado) {
             throw new CredencialesInvalidasException("Tu cuenta de Google no tiene el correo verificado");
         }
-        if (!correo.toLowerCase().endsWith(DOMINIO_INSTITUCIONAL)) {
-            throw new CorreoNoInstitucionalException("Solo se permiten cuentas " + DOMINIO_INSTITUCIONAL);
+        ParametrosSeguridadService.Parametros vigentes = parametros.get();
+        if (!vigentes.aceptaCorreo(correo)) {
+            throw new CorreoNoInstitucionalException("Solo se permiten cuentas @" + vigentes.dominio());
         }
 
         String nombres = jwt.getClaimAsString("given_name");

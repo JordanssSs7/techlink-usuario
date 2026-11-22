@@ -307,14 +307,9 @@ export default function PortalEstudiante() {
       </div>
       </div>
 
-      {/* Pie mínimo: una sola línea */}
-      <footer className="pt-footer">
-        <span>© {new Date().getFullYear()} TechLink · Mentorías Tecsup</span>
-        <button type="button" onClick={() => irA('ayuda')}>Ayuda</button>
-      </footer>
       </div>
 
-      <AsistenteChat />
+      <AsistenteChat contexto={seccion} rol="ESTUDIANTE" />
     </div>
   );
 }
