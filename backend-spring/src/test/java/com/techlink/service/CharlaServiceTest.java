@@ -44,6 +44,7 @@ class CharlaServiceTest {
     private CharlaRepository charlaRepository;
     private CharlaInscripcionRepository inscripcionRepository;
     private EstudianteRepository estudianteRepository;
+    private NotificacionService notificaciones;
     private CharlaService servicio;
     private Estudiante estudiante;
 
@@ -53,7 +54,8 @@ class CharlaServiceTest {
         inscripcionRepository = Mockito.mock(CharlaInscripcionRepository.class);
         estudianteRepository = Mockito.mock(EstudianteRepository.class);
         ZoneId zona = ZoneId.systemDefault();
-        servicio = new CharlaService(charlaRepository, inscripcionRepository, estudianteRepository,
+        notificaciones = Mockito.mock(NotificacionService.class);
+        servicio = new CharlaService(charlaRepository, inscripcionRepository, estudianteRepository, notificaciones,
                 Clock.fixed(AHORA.atZone(zona).toInstant(), zona));
 
         estudiante = new Estudiante();
@@ -173,6 +175,35 @@ class CharlaServiceTest {
         assertTrue(r.inscrito());
         assertTrue(r.vigente());
         assertEquals("https://meet.test/1", r.enlace());
+    }
+
+    @Test
+    void alInscribirseSeLeAvisaConUnaNotificacionDeTipoCharla() {
+        Charla c = charla(1, "SQL en la industria", "Tema", HOY.plusDays(1), 18, 19);
+        when(charlaRepository.findById(1)).thenReturn(Optional.of(c));
+        when(inscripcionRepository.existsByIdCharlaAndIdUsuario(1, USUARIO_ESTUDIANTE)).thenReturn(false);
+
+        servicio.inscribir(USUARIO_ESTUDIANTE, 1);
+
+        org.mockito.ArgumentCaptor<String> mensaje = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(notificaciones).crear(org.mockito.ArgumentMatchers.eq(USUARIO_ESTUDIANTE),
+                org.mockito.ArgumentMatchers.eq(com.techlink.model.Notificacion.Tipo.CHARLA),
+                org.mockito.ArgumentMatchers.anyString(), mensaje.capture());
+        assertTrue(mensaje.getValue().contains("SQL en la industria"));
+        assertTrue(mensaje.getValue().contains("21/11/2026"));
+        assertTrue(mensaje.getValue().contains("18:00 a 19:00"));
+        assertTrue(mensaje.getValue().contains("https://meet.test/1"));
+    }
+
+    @Test
+    void siFallaLaInscripcionNoSeAvisaDeNada() {
+        Charla c = charla(1, "Charla", "Tema", HOY.plusDays(1), 18, 19);
+        when(charlaRepository.findById(1)).thenReturn(Optional.of(c));
+        when(inscripcionRepository.existsByIdCharlaAndIdUsuario(1, USUARIO_ESTUDIANTE)).thenReturn(true);
+
+        error(() -> servicio.inscribir(USUARIO_ESTUDIANTE, 1));
+
+        verify(notificaciones, never()).crear(any(), any(), any(), any());
     }
 
     @Test

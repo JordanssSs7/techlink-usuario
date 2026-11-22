@@ -63,10 +63,30 @@ class PreferenciaNotificacionServiceTest {
     void sinPreferenciasGuardadasTodoEstaActivado() {
         List<PreferenciaResponse> lista = servicio.listar(USUARIO);
 
-        assertEquals(3, lista.size());
+        assertEquals(4, lista.size());
         assertTrue(de(lista, "SESION").enApp());
         assertTrue(de(lista, "SESION").correo());
         assertTrue(de(lista, "RECORDATORIO").correo());
+    }
+
+    @Test
+    void lasCharlasTienenSuPropioTipoSoloEnLaAplicacion() {
+        PreferenciaResponse charla = de(servicio.listar(USUARIO), "CHARLA");
+
+        assertEquals("Charlas", charla.nombre());
+        assertTrue(charla.enApp());
+        assertFalse(charla.correo());
+        assertFalse(charla.correoDisponible());
+    }
+
+    @Test
+    void sePuedenDesactivarLosAvisosDeCharlasSinTocarLosDemasTipos() {
+        List<PreferenciaResponse> lista = servicio.guardar(USUARIO, List.of(new PreferenciaCambio("CHARLA", false, null)));
+
+        assertFalse(de(lista, "CHARLA").enApp());
+        assertTrue(de(lista, "SESION").enApp());
+        assertFalse(servicio.permite(USUARIO, Tipo.CHARLA, PreferenciaNotificacionService.Canal.EN_APP));
+        assertTrue(servicio.permite(USUARIO, Tipo.SESION, PreferenciaNotificacionService.Canal.EN_APP));
     }
 
     @Test

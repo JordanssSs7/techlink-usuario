@@ -17,10 +17,12 @@ import java.time.LocalDateTime;
 public class Notificacion {
 
     // SESION: confirmaciones y cambios de sus sesiones. RECORDATORIO: aviso previo a una sesión. ANUNCIO: lo publica el admin.
+    // CHARLA: charlas nuevas afines al estudiante, su inscripción y los cambios o cancelaciones de la charla (HU-24).
     public enum Tipo {
         SESION,
         RECORDATORIO,
-        ANUNCIO
+        ANUNCIO,
+        CHARLA
     }
 
     @Id

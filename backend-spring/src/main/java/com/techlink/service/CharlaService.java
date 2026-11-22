@@ -5,6 +5,7 @@ import com.techlink.dto.CharlasRecomendadasResponse;
 import com.techlink.exception.ReglaNegocioException;
 import com.techlink.model.Charla;
 import com.techlink.model.CharlaInscripcion;
+import com.techlink.model.Notificacion;
 import com.techlink.model.Curso;
 import com.techlink.model.Estudiante;
 import com.techlink.repository.CharlaInscripcionRepository;
@@ -20,6 +21,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,23 +37,27 @@ public class CharlaService {
     private final CharlaRepository charlaRepository;
     private final CharlaInscripcionRepository inscripcionRepository;
     private final EstudianteRepository estudianteRepository;
+    private final NotificacionService notificaciones;
     private final Clock reloj;
 
     @Autowired
     public CharlaService(CharlaRepository charlaRepository,
                          CharlaInscripcionRepository inscripcionRepository,
-                         EstudianteRepository estudianteRepository) {
-        this(charlaRepository, inscripcionRepository, estudianteRepository, Clock.systemDefaultZone());
+                         EstudianteRepository estudianteRepository,
+                         NotificacionService notificaciones) {
+        this(charlaRepository, inscripcionRepository, estudianteRepository, notificaciones, Clock.systemDefaultZone());
     }
 
     // El reloj se puede cambiar solo en las pruebas automaticas.
     CharlaService(CharlaRepository charlaRepository,
                   CharlaInscripcionRepository inscripcionRepository,
                   EstudianteRepository estudianteRepository,
+                  NotificacionService notificaciones,
                   Clock reloj) {
         this.charlaRepository = charlaRepository;
         this.inscripcionRepository = inscripcionRepository;
         this.estudianteRepository = estudianteRepository;
+        this.notificaciones = notificaciones;
         this.reloj = reloj;
     }
 
@@ -110,6 +116,12 @@ public class CharlaService {
             throw new ReglaNegocioException(HttpStatus.CONFLICT, "Ya estás inscrito en esta charla.");
         }
         inscripcionRepository.save(new CharlaInscripcion(charlaId, usuarioId));
+        // HU-24: aviso de tipo CHARLA (si el estudiante no lo desactivó en sus preferencias).
+        notificaciones.crear(usuarioId, Notificacion.Tipo.CHARLA, "Te inscribiste a una charla",
+                "Quedaste inscrito en \"%s\": %s de %s a %s. Enlace: %s".formatted(charla.getNombre(),
+                        charla.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                        charla.getHoraInicio().format(DateTimeFormatter.ofPattern("HH:mm")),
+                        charla.getHoraFin().format(DateTimeFormatter.ofPattern("HH:mm")), charla.getEnlace()));
         return aRespuesta(charla, null, true, ahora);
     }
 
