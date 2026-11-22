@@ -7,6 +7,8 @@ import Foro from './Foro';
 import Charlas from './Charlas';
 import Calendario from './Calendario';
 import CentroAyuda from './CentroAyuda';
+import Notificaciones from './Notificaciones';
+import useNotificacionesPendientes from './useNotificaciones';
 import MentoresRanking from './MentoresRanking';
 import MiCuenta from './MiCuenta';
 import PostularMentor from './PostularMentor';
@@ -44,6 +46,11 @@ const SECCIONES = [
     id: 'calendario',
     titulo: 'Calendario',
     icono: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17M8 14h2M12 14h2M16 14h.01M8 17h2" /></>
+  },
+  {
+    id: 'notificaciones',
+    titulo: 'Notificaciones',
+    icono: <><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7.5 2 7.5H4S6 15 6 9" /><path d="M10 20a2 2 0 0 0 4 0" /></>
   },
   {
     id: 'mentores',
@@ -88,6 +95,7 @@ export default function PortalEstudiante() {
   const fotoPropia = useFotoPropia();
   const [seccion, setSeccion] = useState('inicio');
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const { pendientes, poner: ponerPendientes } = useNotificacionesPendientes();
 
   const primerNombre = (usuario.nombres || '').split(' ')[0];
   const apellidos = usuario.apellidos && usuario.apellidos !== '-' ? usuario.apellidos : '';
@@ -145,6 +153,9 @@ export default function PortalEstudiante() {
             >
               <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>{s.icono}</svg>
               {s.titulo}
+              {s.id === 'notificaciones' && pendientes > 0 && (
+                <span className="no-badge" aria-label={`${pendientes} sin leer`}>{pendientes}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -236,6 +247,14 @@ export default function PortalEstudiante() {
               <h1>Foro de consultas</h1>
               <p className="pt-intro">Pregunta tus dudas por curso y ayuda a otros con lo que sabes. Quien pregunta puede marcar la respuesta que le sirvió.</p>
               <Foro />
+            </section>
+          )}
+          {seccion === 'notificaciones' && (
+            <section key="notificaciones" className="pt-seccion">
+              <p className="pt-eyebrow">Tus avisos</p>
+              <h1>Notificaciones</h1>
+              <p className="pt-intro">Confirmaciones, cambios de tus sesiones, recordatorios y anuncios. En Preferencias eliges qué recibir.</p>
+              <Notificaciones onCambio={ponerPendientes} />
             </section>
           )}
           {seccion === 'ayuda' && (

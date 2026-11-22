@@ -1,0 +1,32 @@
+/* Centro de notificaciones (HU-22) y preferencias (HU-24). Usa las variables de .co (Comunidad.css). */
+.no-pestanas { display: flex; gap: 0.5rem; }
+.no-pestanas button, .no-filtros button { padding: 0.5rem 1.1rem; font-size: 14px; font-weight: 700; color: var(--co-marino); background: #fff; border: 1px solid var(--co-marino); border-radius: 999px; cursor: pointer; }
+.no-pestanas button.activa, .no-filtros button.activa { color: #fff; background: var(--co-marino); }
+.no-insignia { display: inline-block; min-width: 1.3em; margin-left: 0.5rem; padding: 0 0.4em; font-size: 12px; line-height: 1.4rem; text-align: center; color: #000; background: var(--co-perla); border-radius: 999px; }
+
+.no-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.no-filtros { display: flex; gap: 0.5rem; }
+
+.no-lista { display: flex; flex-direction: column; gap: 0.5rem; }
+.no-item { display: flex; gap: 0.75rem; width: 100%; padding: 0.9rem 1rem; text-align: left; color: var(--co-tinta); background: #fff; border: 1px solid var(--co-linea); border-radius: 12px; cursor: pointer; }
+.no-item:hover { background: var(--co-suave); }
+.no-item.sin-leer { background: var(--co-perla); border-color: var(--co-ocean); }
+.no-punto { flex: none; width: 10px; height: 10px; margin-top: 0.4rem; border-radius: 50%; background: transparent; }
+.no-item.sin-leer .no-punto { background: var(--co-marino); }
+.no-cuerpo { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.no-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.no-tipo { padding: 0.1rem 0.6rem; font-size: 12px; font-weight: 700; color: var(--co-marino); background: var(--co-suave); border-radius: 999px; }
+.no-mensaje { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.no-mensaje a { color: var(--co-marino); }
+.no-fecha { font-size: 12px; color: var(--co-gris); }
+
+.no-prefs { display: flex; flex-direction: column; }
+.no-pref { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 1rem; padding: 0.9rem 0; border-top: 1px solid var(--co-linea); }
+.no-interruptor { display: flex; align-items: center; gap: 0.5rem; margin: 0 !important; font-size: 14px !important; font-weight: 600 !important; white-space: nowrap; }
+.no-interruptor input { width: 18px; height: 18px; accent-color: var(--co-marino); }
+@media (max-width: 640px) {
+  .no-pref { grid-template-columns: 1fr; gap: 0.5rem; }
+}
+
+/* Indicador de avisos sin leer en el menú */
+.no-badge { display: inline-block; min-width: 1.35em; margin-left: auto; padding: 0 0.4em; font-size: 11px; font-weight: 700; line-height: 1.35rem; text-align: center; color: #000; background: var(--co-perla, #FBF9E4); border-radius: 999px; }
