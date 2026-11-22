@@ -64,7 +64,7 @@ function EtiquetasInput({ id, etiqueta, valores, onChange, placeholder, error })
 
 // Pantalla del mentor (HU-05): fortalezas, cursos dominados, áreas de conocimiento y disponibilidad semanal.
 export default function PerfilMentor() {
-  const { usuario, authFetch, logout } = useAuth();
+  const { authFetch } = useAuth();
   const [catalogo, setCatalogo] = useState([]);
   const [especialidad, setEspecialidad] = useState('');
   const [fortalezas, setFortalezas] = useState([]);
@@ -182,19 +182,9 @@ export default function PerfilMentor() {
   };
 
   return (
-    <div className="login-page mentor-page">
-      <section className="mentor-panel">
+    // El título y la barra lateral los pone el portal del mentor; aquí solo va el formulario, dentro de una tarjeta.
+    <div className="login-page mentor-perfil">
         <div className="mentor-caja">
-          <svg className="login-logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 3h8l-3 9H3z" fill="currentColor" />
-            <path d="M13 3h8v9h-5l-3 9H9z" fill="currentColor" />
-          </svg>
-
-          <h1 className="login-title">Mi perfil de mentor</h1>
-          <p className="login-subtitle">
-            Hola, {usuario.nombres}. Lo que registres aquí se usa para recomendarte a los estudiantes y para que agenden contigo.
-          </p>
-
           {cargando ? (
             <p className="login-subtitle" role="status">Cargando tu perfil...</p>
           ) : (
@@ -306,11 +296,7 @@ export default function PerfilMentor() {
             </form>
           )}
 
-          <p className="mentor-salir">
-            <a href="#salir" onClick={(e) => { e.preventDefault(); logout(); }}>Cerrar sesión</a>
-          </p>
         </div>
-      </section>
     </div>
   );
 }

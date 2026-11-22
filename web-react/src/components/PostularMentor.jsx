@@ -118,9 +118,25 @@ export default function PostularMentor() {
         <form className="cu-tarjeta" onSubmit={enviar} noValidate>
           <h2 className="cu-titulo-tarjeta">Postula a la insignia de Mentor</h2>
           <p className="cu-ayuda">
-            Adjunta el comprobante de tus cursos aprobados (por ejemplo, tu constancia de notas). Un administrador lo revisará
+            Adjunta el comprobante de tus cursos aprobados, sacado de tu cuenta de Tecsup. Un administrador lo revisará
             para acreditarte como mentor.
           </p>
+          <div className="cu-pasos">
+            <strong>Cómo obtener tu comprobante</strong>
+            <ol>
+              <li>
+                Entra a tu cuenta de alumno en{' '}
+                <a href="https://sis.tecsup.edu.pe/Alumnos/Login" target="_blank" rel="noopener noreferrer">sis.tecsup.edu.pe</a>.
+              </li>
+              <li>Ve a la sección <strong>Consultas</strong> y elige <strong>Concentración de calificaciones</strong>.</li>
+              <li>Busca el período donde aparece el curso que quieres enseñar y toma una captura de pantalla (o descarga el PDF).</li>
+              <li>Sube la captura en JPG o PNG, o el PDF.</li>
+            </ol>
+            <p>
+              Basta con las notas de los cursos que vas a dictar como mentor, no de todos. La captura debe mostrar tu nombre, el
+              período y la nota. Solo se aceptan imágenes sin editar: un administrador las compara con tu cuenta.
+            </p>
+          </div>
 
           <input ref={entrada} type="file" accept="application/pdf,image/png,image/jpeg" className="cu-oculto" onChange={elegir} aria-label="Elegir comprobante" />
           <button type="button" className="cu-zona" onClick={() => entrada.current?.click()}>

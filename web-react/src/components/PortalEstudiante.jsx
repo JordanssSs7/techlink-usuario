@@ -9,6 +9,7 @@ import Seguimiento from './Seguimiento';
 import Calendario from './Calendario';
 import CentroAyuda from './CentroAyuda';
 import Notificaciones from './Notificaciones';
+import InicioEstudiante from './InicioEstudiante';
 import useNotificacionesPendientes from './useNotificaciones';
 import MentoresRanking from './MentoresRanking';
 import MiCuenta from './MiCuenta';
@@ -190,22 +191,7 @@ export default function PortalEstudiante() {
       <div className="pt-fila">
       <div className="pt-principal">
         <div className="pt-cuerpo">
-          {seccion === 'inicio' && (
-            <section key="inicio" className="pt-seccion">
-              <p className="pt-eyebrow">Panel del estudiante</p>
-              <h1>Hola, {primerNombre}.</h1>
-              <p className="pt-intro">Te damos la bienvenida a TechLink, la plataforma de mentorías de Tecsup.</p>
-              <div className="pt-tarjeta">
-                <div>
-                  <h2>Encuentra a tu mentor ideal</h2>
-                  <p>Dinos en qué cursos necesitas ayuda y cuándo tienes tiempo libre. Nuestra IA te propone los 3 mentores que mejor coinciden.</p>
-                </div>
-                <button type="button" className="bm-primario claro" onClick={() => irA('buscar')}>
-                  Buscar mentor <span aria-hidden="true">→</span>
-                </button>
-              </div>
-            </section>
-          )}
+          {seccion === 'inicio' && <InicioEstudiante key="inicio" nombre={primerNombre} pendientes={pendientes} irA={irA} />}
           {seccion === 'buscar' && (
             <section key="buscar" className="pt-seccion pt-buscar">
               {/* En pantallas angostas la imagen se muestra aquí como franja; en anchas va en el lado derecho. */}
@@ -314,21 +300,6 @@ export default function PortalEstudiante() {
       )}
       </div>
 
-      {/* El footer va fuera de la fila contenido + imagen, para ocupar todo el ancho debajo de ambos */}
-      <footer className="pt-footer">
-        <div className="pt-footer-arriba">
-          <div className="pt-footer-info">
-            <div className="pt-footer-marca"><Logo size={22} /><span>TechLink</span></div>
-            <p className="pt-footer-desc">Plataforma de mentorías entre estudiantes de Tecsup.</p>
-          </div>
-          <nav className="pt-footer-nav" aria-label="Secciones (pie de página)">
-            {SECCIONES.map((s) => (
-              <button key={s.id} type="button" onClick={() => irA(s.id)}>{s.titulo}</button>
-            ))}
-          </nav>
-        </div>
-        <p className="pt-footer-copy">© {new Date().getFullYear()} TechLink · Mentorías Tecsup</p>
-      </footer>
       </div>
 
       <AsistenteChat />
