@@ -1,6 +1,7 @@
 
 package com.techlink.repository;
 
+import com.techlink.model.Estudiante;
 import com.techlink.model.Sesion;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -86,4 +87,11 @@ public interface SesionRepository extends JpaRepository<Sesion, Integer> {
     List<Sesion> confirmadasDelUsuarioEntre(@Param("usuarioId") Integer usuarioId,
                                             @Param("desde") LocalDate desde,
                                             @Param("hasta") LocalDate hasta);
+
+    // HU-11: los estudiantes con los que un mentor tiene (o tuvo) sesiones confirmadas: a ellos puede ponerles metas.
+    @Query("""
+        SELECT DISTINCT s.estudiante FROM Sesion s
+        WHERE s.mentor.usuario.id = :usuarioId AND s.estado = com.techlink.model.Sesion.EstadoSesion.CONFIRMADA
+        """)
+    List<Estudiante> estudiantesDeMentor(@Param("usuarioId") Integer usuarioId);
 }
