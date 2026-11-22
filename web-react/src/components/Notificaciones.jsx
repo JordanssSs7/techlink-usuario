@@ -6,7 +6,8 @@ import { useAuth } from '../auth/authContext';
 const TIPOS = {
   SESION: 'Sesión',
   RECORDATORIO: 'Recordatorio',
-  ANUNCIO: 'Anuncio'
+  ANUNCIO: 'Anuncio',
+  CHARLA: 'Charla'
 };
 
 function formatearFecha(texto) {

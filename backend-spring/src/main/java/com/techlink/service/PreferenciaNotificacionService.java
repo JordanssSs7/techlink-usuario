@@ -38,6 +38,8 @@ public class PreferenciaNotificacionService {
                 "Aviso 24 horas y 1 hora antes de cada sesión.", true));
         DESCRIPCIONES.put(Tipo.ANUNCIO, new Descripcion("Anuncios",
                 "Novedades que publica el equipo de TechLink para tu rol.", false));
+        DESCRIPCIONES.put(Tipo.CHARLA, new Descripcion("Charlas",
+                "Charlas nuevas que coinciden con tus intereses, tu inscripción y los cambios o cancelaciones de tus charlas.", false));
     }
 
     private final PreferenciaNotificacionRepository repositorio;
