@@ -1,6 +1,7 @@
 
 package com.techlink.service;
 
+import com.techlink.model.Notificacion;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -16,16 +17,19 @@ public class SesionNotificacionService {
     private final JavaMailSender mailSender;
     private final String correoRemitente;
     private final String correoPruebas;
+    private final PreferenciaNotificacionService preferencias;
 
 
     public SesionNotificacionService(
             JavaMailSender mailSender,
             @Value("${spring.mail.username}") String correoRemitente,
-            @Value("${app.sesiones.correo-pruebas:}") String correoPruebas
+            @Value("${app.sesiones.correo-pruebas:}") String correoPruebas,
+            PreferenciaNotificacionService preferencias
     ) {
         this.mailSender = mailSender;
         this.correoRemitente = correoRemitente;
         this.correoPruebas = correoPruebas;
+        this.preferencias = preferencias;
     }
 
     public void enviarConfirmacion(
@@ -60,8 +64,30 @@ public class SesionNotificacionService {
                 enlaceReunion
         );
 
-        enviarCorreo(correoEstudiante, mensaje);
-        enviarCorreo(correoMentor, mensaje);
+        // HU-24: solo se envía a quien no desactivó los correos de sus sesiones.
+        enviarSiPermite(correoEstudiante, "TechLink - Confirmacion de sesion de mentoria", mensaje);
+        enviarSiPermite(correoMentor, "TechLink - Confirmacion de sesion de mentoria", mensaje);
+    }
+
+    // HU-23: recordatorio previo a la sesión, con fecha, hora y enlace de la reunión. Respeta las preferencias (HU-24).
+    // Devuelve false si el destinatario desactivó los recordatorios por correo.
+    public boolean enviarRecordatorio(String correo, String nombre, String horasAntes, LocalDate fecha,
+                                      LocalTime horaInicio, LocalTime horaFin, String enlaceReunion) {
+        String mensaje = """
+                Hola %s,
+
+                Te recordamos que tu sesion de mentoria en TechLink empieza en %s.
+
+                Fecha: %s
+                Hora de inicio: %s
+                Hora de finalizacion: %s
+
+                Enlace de reunion:
+                %s
+                """.formatted(nombre, horasAntes, fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                horaInicio.format(DateTimeFormatter.ofPattern("HH:mm")),
+                horaFin.format(DateTimeFormatter.ofPattern("HH:mm")), enlaceReunion);
+        return enviarSiPermite(correo, "TechLink - Recordatorio de tu sesion de mentoria", mensaje, Notificacion.Tipo.RECORDATORIO);
     }
 
     // HU-19: avisa al estudiante y al mentor que la sesión se canceló o cambió de horario.
@@ -100,15 +126,21 @@ public class SesionNotificacionService {
                     evento.enlaceReunion());
         }
 
-        enviarCorreo(evento.correoEstudiante(), asunto, mensaje);
-        enviarCorreo(evento.correoMentor(), asunto, mensaje);
+        enviarSiPermite(evento.correoEstudiante(), asunto, mensaje);
+        enviarSiPermite(evento.correoMentor(), asunto, mensaje);
     }
 
-    private void enviarCorreo(
-            String destinatario,
-            String mensaje
-    ) {
-        enviarCorreo(destinatario, "TechLink - Confirmacion de sesion de mentoria", mensaje);
+    private boolean enviarSiPermite(String destinatario, String asunto, String mensaje) {
+        return enviarSiPermite(destinatario, asunto, mensaje, Notificacion.Tipo.SESION);
+    }
+
+    // HU-24: consulta las preferencias del destinatario antes de enviar.
+    private boolean enviarSiPermite(String destinatario, String asunto, String mensaje, Notificacion.Tipo tipo) {
+        if (destinatario != null && !preferencias.permiteCorreoA(destinatario, tipo)) {
+            return false;
+        }
+        enviarCorreo(destinatario, asunto, mensaje);
+        return true;
     }
 
     private void enviarCorreo(
