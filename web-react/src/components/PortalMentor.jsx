@@ -8,6 +8,7 @@ import Foro from './Foro';
 import Calendario from './Calendario';
 import CentroAyuda from './CentroAyuda';
 import Notificaciones from './Notificaciones';
+import EstadisticasMentor from './EstadisticasMentor';
 import useNotificacionesPendientes from './useNotificaciones';
 
 const SECCIONES = [
@@ -15,6 +16,7 @@ const SECCIONES = [
   { id: 'cuenta', titulo: 'Mis datos' },
   { id: 'sesiones', titulo: 'Mis sesiones' },
   { id: 'calendario', titulo: 'Calendario' },
+  { id: 'estadisticas', titulo: 'Estadísticas' },
   { id: 'notificaciones', titulo: 'Notificaciones' },
   { id: 'foro', titulo: 'Foro' },
   { id: 'ayuda', titulo: 'Ayuda' }
@@ -70,6 +72,14 @@ export default function PortalMentor() {
           <h1>Calendario</h1>
           <p className="pm-intro">Tus sesiones con los estudiantes, por semana o por día. Elige una para ver su detalle y el enlace de la reunión.</p>
           <Calendario />
+        </main>
+      )}
+      {seccion === 'estadisticas' && (
+        <main className="pm-contenido">
+          <p className="pm-eyebrow">Tu desempeño</p>
+          <h1>Estadísticas</h1>
+          <p className="pm-intro">Tus sesiones, horas y calificación mes a mes, y tu constancia de horas de mentoría en PDF.</p>
+          <EstadisticasMentor />
         </main>
       )}
       {seccion === 'foro' && (

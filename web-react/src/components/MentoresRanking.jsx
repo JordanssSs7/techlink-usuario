@@ -159,29 +159,84 @@ function PerfilPublico({ idMentor, onVolver, onAgendar }) {
   );
 }
 
+const DIAS = [
+  [1, 'Lunes'], [2, 'Martes'], [3, 'Miércoles'], [4, 'Jueves'], [5, 'Viernes'], [6, 'Sábado'], [7, 'Domingo']
+];
+const FRANJAS = [
+  { id: 'manana', nombre: 'Mañana (7:00 a 12:00)', desde: '07:00', hasta: '12:00' },
+  { id: 'tarde', nombre: 'Tarde (13:00 a 18:00)', desde: '13:00', hasta: '18:00' },
+  { id: 'noche', nombre: 'Noche (18:00 a 22:00)', desde: '18:00', hasta: '22:00' }
+];
+const NOTAS = [['3', '3 o más'], ['4', '4 o más'], ['4.5', '4,5 o más']];
+const SIN_FILTROS = { cursoId: '', dia: '', franja: '', minima: '' };
+
 // HU-15: ranking de mentores por promedio de estrellas y horas dictadas, con sus insignias.
-// Desde aquí se abre el perfil público (HU-14) y se puede agendar.
+// HU-16: se puede buscar y filtrar por curso, horario y calificación mínima (los filtros se combinan); sin resultados se
+// explica y se sugiere qué filtro ampliar. Desde aquí se abre el perfil público (HU-14) y se puede agendar.
 export default function MentoresRanking() {
   const { authFetch } = useAuth();
-  const [mentores, setMentores] = useState(null);
+  const [cursos, setCursos] = useState([]);
+  const [filtros, setFiltros] = useState(SIN_FILTROS);
+  const [busqueda, setBusqueda] = useState(null);
   const [error, setError] = useState('');
   const [verId, setVerId] = useState(null);
   const [agendando, setAgendando] = useState(null);
+
+  // Parámetros de la búsqueda según los filtros elegidos; el texto sirve también para saber si la respuesta es la actual.
+  const consulta = (() => {
+    const params = new URLSearchParams();
+    if (filtros.cursoId) params.set('cursoId', filtros.cursoId);
+    if (filtros.dia) params.set('dia', filtros.dia);
+    const franja = FRANJAS.find((f) => f.id === filtros.franja);
+    if (franja) {
+      params.set('desde', franja.desde);
+      params.set('hasta', franja.hasta);
+    }
+    if (filtros.minima) params.set('calificacionMinima', filtros.minima);
+    return params.toString();
+  })();
+  const mentores = busqueda?.consulta === consulta ? busqueda.datos.mentores : null;
+  const hayFiltros = Object.values(filtros).some(Boolean);
 
   useEffect(() => {
     let activo = true;
     (async () => {
       try {
-        const response = await authFetch('/api/mentores/ranking');
+        const response = await authFetch('/api/cursos');
         const data = await response.json().catch(() => null);
-        if (!response.ok) throw new Error(data?.error || '');
-        if (activo) setMentores(data);
-      } catch (e) {
-        if (activo) setError(e.message || 'No se pudo cargar el ranking de mentores.');
+        if (response.ok && activo) setCursos(data);
+      } catch {
+        // Sin el catálogo igual se puede buscar por horario y calificación.
       }
     })();
     return () => { activo = false; };
   }, [authFetch]);
+
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      try {
+        const response = await authFetch(`/api/mentores/buscar${consulta ? `?${consulta}` : ''}`);
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.error || '');
+        if (!activo) return;
+        setBusqueda({ consulta, datos: data });
+        setError('');
+      } catch (e) {
+        if (activo) setError(e.message || 'No se pudo cargar la lista de mentores.');
+      }
+    })();
+    return () => { activo = false; };
+  }, [authFetch, consulta]);
+
+  const cambiar = (campo) => (e) => setFiltros((f) => ({ ...f, [campo]: e.target.value }));
+  // Una sugerencia quita el filtro que dejaba sin resultados (o todos).
+  const ampliar = (quitar) => setFiltros((f) => {
+    if (quitar === 'todos') return SIN_FILTROS;
+    if (quitar === 'curso') return { ...f, cursoId: '' };
+    if (quitar === 'horario') return { ...f, dia: '', franja: '' };
+    return { ...f, minima: '' };
+  });
 
   if (agendando) {
     return (
@@ -203,11 +258,64 @@ export default function MentoresRanking() {
     );
   }
 
+  const resultado = busqueda?.consulta === consulta ? busqueda.datos : null;
+
   return (
     <div className="cu">
+      <form className="cu-filtros" onSubmit={(e) => e.preventDefault()} aria-label="Buscar mentores">
+        <label>
+          Curso
+          <select value={filtros.cursoId} onChange={cambiar('cursoId')}>
+            <option value="">Todos los cursos</option>
+            {cursos.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </label>
+        <label>
+          Día
+          <select value={filtros.dia} onChange={cambiar('dia')}>
+            <option value="">Cualquier día</option>
+            {DIAS.map(([valor, nombre]) => <option key={valor} value={valor}>{nombre}</option>)}
+          </select>
+        </label>
+        <label>
+          Horario
+          <select value={filtros.franja} onChange={cambiar('franja')}>
+            <option value="">Cualquier hora</option>
+            {FRANJAS.map((f) => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+          </select>
+        </label>
+        <label>
+          Calificación mínima
+          <select value={filtros.minima} onChange={cambiar('minima')}>
+            <option value="">Cualquiera</option>
+            {NOTAS.map(([valor, nombre]) => <option key={valor} value={valor}>{nombre} ★</option>)}
+          </select>
+        </label>
+        {hayFiltros && <button type="button" className="cu-boton" onClick={() => setFiltros(SIN_FILTROS)}>Limpiar filtros</button>}
+      </form>
+
       {error && <p className="cu-error" role="alert">{error}</p>}
-      {!mentores && !error && <Cargando texto="Cargando mentores…" />}
-      {mentores?.length === 0 && <p className="cu-vacio">Todavía no hay mentores registrados.</p>}
+      {!mentores && !error && <Cargando texto="Buscando mentores…" />}
+      {resultado && mentores.length > 0 && hayFiltros && (
+        <p className="cu-sub" aria-live="polite">{mentores.length} {mentores.length === 1 ? 'mentor coincide' : 'mentores coinciden'} con tu búsqueda</p>
+      )}
+      {resultado && mentores.length === 0 && (
+        <div className="cu-sin-resultados" role="status">
+          <p className="cu-vacio">{resultado.mensaje}</p>
+          {resultado.sugerencias.length > 0 && (
+            <>
+              <p className="cu-sub">Prueba ampliando la búsqueda:</p>
+              <ul className="cu-sugerencias">
+                {resultado.sugerencias.map((sug) => (
+                  <li key={sug.quitar}>
+                    <button type="button" className="cu-boton" onClick={() => ampliar(sug.quitar)}>{sug.texto}</button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
 
       <ol className="cu-ranking">
         {mentores?.map((m) => (
