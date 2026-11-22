@@ -2,6 +2,9 @@ package com.techlink.service;
 
 import com.techlink.dto.RecomendacionRequest;
 import com.techlink.dto.RecomendacionResponse;
+import com.techlink.dto.VistaPreviaRequest;
+import com.techlink.dto.VistaPreviaResponse;
+import com.techlink.service.CriteriosEmparejamientoService.Pesos;
 import com.techlink.dto.RecomendacionResponse.HorarioEnComun;
 import com.techlink.dto.RecomendacionResponse.MentorRecomendado;
 import com.techlink.exception.CursosCriticosInvalidosException;
@@ -84,15 +87,18 @@ public class AgenteRecomendacionService {
     private final CursoRepository cursoRepository;
     private final GeminiClient geminiClient;
     private final LimitadorConsultas limitador;
+    private final CriteriosEmparejamientoService criterios;
 
     public AgenteRecomendacionService(MentorRepository mentorRepository,
                                       CursoRepository cursoRepository,
                                       GeminiClient geminiClient,
-                                      LimitadorConsultas limitador) {
+                                      LimitadorConsultas limitador,
+                                      CriteriosEmparejamientoService criterios) {
         this.mentorRepository = mentorRepository;
         this.cursoRepository = cursoRepository;
         this.geminiClient = geminiClient;
         this.limitador = limitador;
+        this.criterios = criterios;
     }
 
     // Un mentor que cumple las dos condiciones (cursos y horario), con su puntaje base.
@@ -107,7 +113,8 @@ public class AgenteRecomendacionService {
     @Transactional(readOnly = true)
     public RecomendacionResponse recomendar(Integer idUsuario, RecomendacionRequest peticion) {
         List<Curso> pedidos = validarCursos(peticion.cursos());
-        List<Candidato> candidatos = buscarCandidatos(pedidos, peticion.horarios());
+        Pesos pesos = criterios.actuales();
+        List<Candidato> candidatos = buscarCandidatos(pedidos, peticion.horarios(), pesos);
 
         if (candidatos.isEmpty()) {
             return new RecomendacionResponse(false,
@@ -162,7 +169,8 @@ public class AgenteRecomendacionService {
     }
 
     // Mentores activos que dominan al menos uno de los cursos Y tienen un horario activo en comun con el estudiante.
-    private List<Candidato> buscarCandidatos(List<Curso> pedidos, List<RecomendacionRequest.Horario> horariosEstudiante) {
+    private List<Candidato> buscarCandidatos(List<Curso> pedidos, List<RecomendacionRequest.Horario> horariosEstudiante,
+                                             Pesos pesos) {
         Set<Integer> idsPedidos = pedidos.stream().map(Curso::getId).collect(Collectors.toSet());
         List<Candidato> candidatos = new ArrayList<>();
 
@@ -201,16 +209,56 @@ public class AgenteRecomendacionService {
                 continue;
             }
 
-            // Calculo base: 70 % por cuantos de los cursos pedidos domina y 30 % por cuanto horario comparten.
+            // Calculo base (HU-61): promedio ponderado de tres criterios, con los pesos que el administrador ajusta en el panel
+            // (por defecto 70 % cursos, 0 % calificacion y 30 % horario). Cada criterio va de 0 a 1.
             double cobertura = (double) enComun.size() / pedidos.size();
             double horario = Math.min(1.0, minutos / MINUTOS_PARA_PUNTAJE_COMPLETO);
-            int puntaje = (int) Math.round(100 * (0.7 * cobertura + 0.3 * horario));
+            double puntajeCalificacion = puntajeCalificacion(mentor);
+            int puntaje = (int) Math.round(100 * (pesos.fraccionCursos() * cobertura
+                    + pesos.fraccionCalificacion() * puntajeCalificacion + pesos.fraccionDisponibilidad() * horario));
+            puntaje = Math.max(0, Math.min(100, puntaje));
             candidatos.add(new Candidato(mentor, enComun, horarios, minutos, puntaje));
         }
 
         candidatos.sort(Comparator.comparingInt(Candidato::puntajeBase).reversed()
                 .thenComparing(c -> c.mentor().getId()));
         return candidatos;
+    }
+
+    // La calificacion del mentor (de 0 a 5) llevada a 0-1. Un mentor sin calificaciones todavia no se premia ni se castiga: vale 0,5.
+    static double puntajeCalificacion(Mentor mentor) {
+        Integer total = mentor.getTotalCalificaciones();
+        if (total == null || total <= 0 || mentor.getReputacion() == null) {
+            return 0.5;
+        }
+        return Math.max(0, Math.min(1, mentor.getReputacion().doubleValue() / 5.0));
+    }
+
+    // HU-61: vista previa para el administrador. Calcula con unos pesos (los de la peticion o, si no vienen, los vigentes) los
+    // 3 mentores que saldrian para un caso de prueba, sin llamar a la IA ni guardar nada, para compararlos antes de guardar.
+    // Si no se indican horarios se supone que el estudiante esta libre toda la semana.
+    @Transactional(readOnly = true)
+    public VistaPreviaResponse vistaPrevia(VistaPreviaRequest peticion) {
+        Pesos pesos = peticion.pesos() == null ? criterios.actuales() : Pesos.de(peticion.pesos());
+        List<Curso> pedidos = validarCursos(peticion.cursos() == null ? List.of() : peticion.cursos());
+        List<RecomendacionRequest.Horario> horarios = peticion.horarios() == null || peticion.horarios().isEmpty()
+                ? semanaLibre() : peticion.horarios();
+        List<Candidato> candidatos = buscarCandidatos(pedidos, horarios, pesos);
+        List<VistaPreviaResponse.Mentor> mentores = candidatos.stream().limit(MAX_RESULTADOS)
+                .map(c -> new VistaPreviaResponse.Mentor(c.mentor().getId(), c.mentor().getUsuario().getNombres(),
+                        c.mentor().getUsuario().getApellidos(), c.puntajeBase(), c.cursosEnComun().size(), pedidos.size(),
+                        Math.round(puntajeCalificacion(c.mentor()) * 500) / 100.0,
+                        c.mentor().getTotalCalificaciones() == null ? 0 : c.mentor().getTotalCalificaciones(), c.minutosEnComun()))
+                .toList();
+        return new VistaPreviaResponse(pesos.aDto(), candidatos.size(), mentores);
+    }
+
+    private static List<RecomendacionRequest.Horario> semanaLibre() {
+        List<RecomendacionRequest.Horario> semana = new ArrayList<>();
+        for (int dia = 1; dia <= 7; dia++) {
+            semana.add(new RecomendacionRequest.Horario(dia, LocalTime.of(6, 0), LocalTime.of(22, 0)));
+        }
+        return semana;
     }
 
     // Pide a la IA que elija y explique. Solo se le envian datos anonimos: cursos, horarios y perfiles tecnicos.

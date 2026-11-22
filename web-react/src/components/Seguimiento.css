@@ -1,0 +1,103 @@
+/* Metas semanales (HU-11) y evolución (HU-12). Blanco y negro, igual que el resto de la aplicación. */
+.sg-contenedor { display: flex; flex-direction: column; gap: 1.1rem; max-width: 860px; }
+.sg { display: flex; flex-direction: column; gap: 1rem; color: #0b0b0c; font-family: inherit; }
+.sg h2, .sg h3, .sg p, .sg ul { margin: 0; }
+.sg ul { padding: 0; list-style: none; }
+.sg :focus-visible, .sg-contenedor :focus-visible { outline: 2px solid #0b0b0c; outline-offset: 2px; }
+
+.sg-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; }
+.sg-navegar, .sg-vistas { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.sg-rango { flex: 1; min-width: 160px; font-size: 20px; }
+.sg-barra .sg-navegar + .sg-rango { text-align: center; }
+.sg-boton { padding: 0.5rem 1.1rem; font: inherit; font-size: 14px; font-weight: 700; color: #0b0b0c; background: #fff; border: 1px solid #0b0b0c; border-radius: 999px; cursor: pointer; transition: background 0.15s; }
+.sg-boton:hover:not(:disabled) { background: #f1f1f1; }
+.sg-boton.primario { color: #fff; background: #0b0b0c; }
+.sg-boton.primario:hover:not(:disabled) { background: #222; }
+.sg-boton.icono { width: 38px; padding: 0.4rem 0; font-size: 18px; line-height: 1; }
+.sg-boton:disabled { opacity: 0.5; cursor: default; }
+.sg-vista { padding: 0.5rem 1.1rem; font: inherit; font-size: 14px; font-weight: 700; color: #0b0b0c; background: #fff; border: 1px solid #d9d9dd; border-radius: 999px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.sg-vista:hover { background: #f1f1f1; }
+.sg-vista.activo { color: #fff; background: #0b0b0c; border-color: #0b0b0c; }
+
+.sg-titulo { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #5c5c63; }
+.sg-aviso { padding: 0.7rem 1rem; font-size: 14px; font-weight: 600; color: #fff; background: #0b0b0c; border-radius: 12px; }
+.sg-error { padding: 0.65rem 0.9rem; font-size: 14px; color: #000; background: #f6f6f7; border-left: 4px solid #000; border-radius: 8px; }
+.sg-vacio, .sg-nota { font-size: 14px; color: #5c5c63; line-height: 1.5; }
+
+/* Progreso de la semana */
+.sg-progreso-caja { display: flex; flex-direction: column; gap: 0.4rem; padding: 1rem 1.2rem; background: #fff; border: 1px solid #e4e4e7; border-radius: 18px; }
+.sg-progreso-texto { display: flex; justify-content: space-between; font-size: 15px; }
+.sg-progreso { height: 12px; overflow: hidden; background: #e9e9ec; border-radius: 999px; }
+.sg-progreso span { display: block; height: 100%; background: #0b0b0c; border-radius: 999px; transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Metas */
+.sg-lista { display: flex; flex-direction: column; gap: 0.6rem; }
+.sg-meta { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; background: #fff; border: 1px solid #e4e4e7; border-radius: 16px; transition: opacity 0.2s, border-color 0.2s; }
+.sg-meta.atrasada { border: 1.5px dashed #0b0b0c; }
+.sg-meta.hecha { opacity: 0.7; }
+.sg-meta.hecha .sg-meta-titulo { text-decoration: line-through; }
+.sg-check { flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; color: transparent; background: #fff; border: 2px solid #0b0b0c; border-radius: 50%; cursor: pointer; transition: background 0.15s, color 0.15s, transform 0.15s; }
+.sg-check:hover:not(:disabled) { transform: scale(1.08); }
+.sg-check[aria-checked='true'] { color: #fff; background: #0b0b0c; }
+.sg-check.solo-lectura { cursor: default; color: #fff; font-size: 14px; }
+.sg-meta.hecha .sg-check.solo-lectura { background: #0b0b0c; }
+.sg-meta-cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.sg-meta-titulo { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.sg-meta-datos { display: flex; flex-wrap: wrap; gap: 0.2rem 0.8rem; font-size: 13px; color: #5c5c63; }
+.sg-estado { font-weight: 800; color: #0b0b0c; }
+.sg-quitar { flex: none; width: 30px; height: 30px; padding: 0; font-size: 20px; line-height: 1; color: #5c5c63; background: transparent; border: 0; border-radius: 50%; cursor: pointer; }
+.sg-quitar:hover:not(:disabled) { color: #fff; background: #0b0b0c; }
+
+/* Formularios */
+.sg-form { display: flex; flex-direction: column; gap: 0.35rem; padding: 1.1rem 1.2rem; background: #f6f6f7; border-radius: 18px; }
+.sg-form.plano { padding: 0; background: transparent; }
+.sg-form label { margin-top: 0.4rem; font-size: 14px; font-weight: 700; }
+.sg-form input, .sg-form select { width: 100%; padding: 0.65rem 0.8rem; font: inherit; font-size: 15px; color: #0b0b0c; background: #fff; border: 1px solid #d9d9dd; border-radius: 10px; box-sizing: border-box; }
+.sg-form-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.sg-form-botones { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
+
+/* Evolución */
+.sg-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; }
+.sg-kpi { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.9rem 1rem; background: #fff; border: 1px solid #e4e4e7; border-radius: 16px; }
+.sg-kpi-titulo { font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #5c5c63; }
+.sg-kpi-valor { font-size: 26px; line-height: 1.1; }
+.sg-kpi-detalle { font-size: 12px; color: #5c5c63; }
+.sg-tarjeta { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.1rem 1.2rem; background: #fff; border: 1px solid #e4e4e7; border-radius: 20px; }
+.sg-leyenda { display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: 13px; color: #5c5c63; }
+.sg-leyenda span { display: inline-flex; align-items: center; gap: 0.45rem; }
+.sg-muestra { display: inline-block; }
+.sg-muestra.barra { width: 14px; height: 14px; background: #0b0b0c; border-radius: 4px; }
+.sg-muestra.linea { width: 22px; height: 0; border-top: 3px solid #0b0b0c; position: relative; }
+.sg-grafico { width: 100%; height: auto; overflow: visible; }
+.sg-linea { stroke: #e4e4e7; stroke-width: 1; }
+.sg-eje { font-size: 11px; fill: #5c5c63; }
+.sg-ranura { cursor: pointer; outline: none; }
+.sg-barra-g { fill: #cfcfd4; transition: fill 0.15s; }
+.sg-ranura.activa .sg-barra-g, .sg-ranura:focus-visible .sg-barra-g { fill: #0b0b0c; }
+.sg-ranura:focus-visible rect:first-child { stroke: #0b0b0c; stroke-width: 2; stroke-dasharray: 4 3; }
+.sg-curva { stroke: #0b0b0c; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.sg-punto { fill: #fff; stroke: #0b0b0c; stroke-width: 2.5; transition: r 0.15s; }
+.sg-detalle { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; padding: 0.7rem 0.9rem; font-size: 14px; background: #f6f6f7; border-radius: 12px; }
+.sg-comparacion { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.sg-comparacion > div { display: flex; flex-direction: column; gap: 0.25rem; font-size: 14px; color: #5c5c63; }
+.sg-comparacion strong { font-size: 28px; color: #0b0b0c; line-height: 1.1; }
+.sg-comparacion .sg-nota { grid-column: 1 / -1; }
+.sg-mini { height: 8px; overflow: hidden; background: #e9e9ec; border-radius: 999px; }
+.sg-mini span { display: block; height: 100%; background: #0b0b0c; border-radius: 999px; transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+.sg-estrellas { display: flex; gap: 0.2rem; margin: 0.2rem 0; }
+.sg-estrellas button { padding: 0 0.1rem; font-size: 32px; line-height: 1; color: #d6d6da; background: transparent; border: 0; cursor: pointer; transition: transform 0.12s, color 0.12s; }
+.sg-estrellas button:hover { transform: scale(1.15); }
+.sg-estrellas button.llena { color: #0b0b0c; }
+.sg-recientes { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.3rem; }
+.sg-recientes li { display: flex; align-items: center; gap: 0.7rem; font-size: 13px; color: #3b3b42; }
+.sg-recientes li > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sg-reciente-estrellas { flex: none; letter-spacing: 1px; }
+.sg-reciente-estrellas i { font-style: normal; color: #d6d6da; }
+
+@media (max-width: 720px) {
+  .sg-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sg-form-fila, .sg-comparacion { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sg-progreso span, .sg-mini span, .sg-check, .sg-barra-g, .sg-punto, .sg-boton, .sg-vista, .sg-estrellas button { transition: none; }
+}

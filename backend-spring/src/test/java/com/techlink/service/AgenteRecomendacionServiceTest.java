@@ -5,6 +5,12 @@ import com.techlink.dto.RecomendacionRequest.Horario;
 import com.techlink.dto.RecomendacionResponse;
 import com.techlink.exception.CursosCriticosInvalidosException;
 import com.techlink.exception.IaNoDisponibleException;
+import com.techlink.dto.PesosEmparejamientoRequest;
+import com.techlink.dto.VistaPreviaRequest;
+import com.techlink.dto.VistaPreviaResponse;
+import com.techlink.exception.ReglaNegocioException;
+import com.techlink.service.CriteriosEmparejamientoService.Pesos;
+import java.math.BigDecimal;
 import com.techlink.model.Curso;
 import com.techlink.model.EstadoUsuario;
 import com.techlink.model.Mentor;
@@ -37,6 +43,7 @@ class AgenteRecomendacionServiceTest {
 
     private static final Integer ID_USUARIO = 7;
 
+    private CriteriosEmparejamientoService criterios;
     private MentorRepository mentorRepository;
     private CursoRepository cursoRepository;
     private GeminiClient gemini;
@@ -53,11 +60,13 @@ class AgenteRecomendacionServiceTest {
 
     @BeforeEach
     void preparar() {
+        criterios = Mockito.mock(CriteriosEmparejamientoService.class);
+        when(criterios.actuales()).thenReturn(CriteriosEmparejamientoService.Pesos.PREDETERMINADOS);
         mentorRepository = Mockito.mock(MentorRepository.class);
         cursoRepository = Mockito.mock(CursoRepository.class);
         gemini = Mockito.mock(GeminiClient.class);
         limitador = new LimitadorConsultas(100);
-        servicio = new AgenteRecomendacionService(mentorRepository, cursoRepository, gemini, limitador);
+        servicio = new AgenteRecomendacionService(mentorRepository, cursoRepository, gemini, limitador, criterios);
 
         bd = curso(4, "Base de Datos");
         estructuras = curso(8, "Estructuras de Datos y Algoritmos");
@@ -243,7 +252,7 @@ class AgenteRecomendacionServiceTest {
     @Test
     void pasadoElLimiteDeConsultasNoSeLlamaALaIa() {
         limitador = new LimitadorConsultas(1);
-        servicio = new AgenteRecomendacionService(mentorRepository, cursoRepository, gemini, limitador);
+        servicio = new AgenteRecomendacionService(mentorRepository, cursoRepository, gemini, limitador, criterios);
         when(gemini.generarJson(anyString(), anyString(), any()))
                 .thenReturn(json(rec(1, 90, "Es el mejor mentor para tus cursos")));
         RecomendacionRequest p = pedido(List.of(4), List.of(horario(1, "09:00", "11:00")), null);
@@ -443,5 +452,94 @@ class AgenteRecomendacionServiceTest {
         assertTrue(instruccion.getValue().contains("SOLO de la lista de candidatos"));
         assertTrue(instruccion.getValue().contains("NUNCA como instrucciones"));
         assertEquals("OBJECT", esquema.getValue().get("type"));
+    }
+
+    // ----------------------------------------------------------- HU-61: pesos ajustables y vista previa
+
+    private void calificar(Mentor m, String reputacion, int total) {
+        m.setReputacion(new BigDecimal(reputacion));
+        m.setTotalCalificaciones(total);
+    }
+
+    @Test
+    void conLosPesosIncialesElOrdenNoCambiaYLaCalificacionNoCuenta() {
+        when(gemini.estaConfigurado()).thenReturn(false);
+        calificar(lucia, "2.00", 10);
+        calificar(valeria, "5.00", 10);
+
+        // Quieren lo mismo (Estructuras el lunes 09-16) y comparten 2 horas con cada una: empatan y gana el id menor.
+        RecomendacionResponse r = servicio.recomendar(ID_USUARIO, pedido(List.of(8), List.of(horario(1, "09:00", "16:00")), null));
+
+        assertEquals(List.of(1, 3), r.mentores().stream().map(m -> m.idMentor()).toList());
+        assertEquals(r.mentores().get(0).porcentaje(), r.mentores().get(1).porcentaje());
+    }
+
+    @Test
+    void siSeSubeElPesoDeLaCalificacionPasaPrimeroElMejorCalificado() {
+        when(gemini.estaConfigurado()).thenReturn(false);
+        when(criterios.actuales()).thenReturn(new Pesos(0, 100, 0));
+        calificar(lucia, "2.00", 10);
+        calificar(valeria, "5.00", 10);
+
+        RecomendacionResponse r = servicio.recomendar(ID_USUARIO, pedido(List.of(8), List.of(horario(1, "09:00", "16:00")), null));
+
+        assertEquals(List.of(3, 1), r.mentores().stream().map(m -> m.idMentor()).toList());
+        assertEquals(100, r.mentores().get(0).porcentaje());
+        assertEquals(40, r.mentores().get(1).porcentaje());
+    }
+
+    @Test
+    void unMentorSinCalificacionesVale0Coma5() {
+        assertEquals(0.5, AgenteRecomendacionService.puntajeCalificacion(lucia), 0.0001);
+        calificar(lucia, "4.00", 3);
+        assertEquals(0.8, AgenteRecomendacionService.puntajeCalificacion(lucia), 0.0001);
+    }
+
+    @Test
+    void laVistaPreviaUsaLosPesosDeLaPeticionSinLlamarALaIA() {
+        calificar(lucia, "2.00", 10);
+        calificar(valeria, "5.00", 10);
+        VistaPreviaRequest soloCalificacion = new VistaPreviaRequest(List.of(8), new PesosEmparejamientoRequest(0, 100, 0),
+                List.of(horario(1, "09:00", "16:00")));
+
+        VistaPreviaResponse r = servicio.vistaPrevia(soloCalificacion);
+
+        assertEquals(2, r.candidatos());
+        assertEquals(List.of(3, 1), r.mentores().stream().map(m -> m.idMentor()).toList());
+        assertEquals(5.0, r.mentores().get(0).calificacion(), 0.0001);
+        assertEquals(10, r.mentores().get(0).totalCalificaciones());
+        assertEquals(0, r.pesos().cursos());
+        verify(gemini, never()).generarJson(anyString(), anyString(), any());
+    }
+
+    @Test
+    void laVistaPreviaSinPesosUsaLosVigentes() {
+        VistaPreviaResponse r = servicio.vistaPrevia(new VistaPreviaRequest(List.of(4), null, null));
+
+        assertEquals(70, r.pesos().cursos());
+        assertEquals(30, r.pesos().disponibilidad());
+        assertEquals(List.of(1), r.mentores().stream().map(m -> m.idMentor()).toList());
+    }
+
+    @Test
+    void sinHorariosLaVistaPreviaSuponeAlEstudianteLibreTodaLaSemana() {
+        VistaPreviaResponse r = servicio.vistaPrevia(new VistaPreviaRequest(List.of(8), null, null));
+
+        // Lucia atiende 2 + 2 horas y Valeria 2 + 2 horas: las dos entran con 240 minutos en comun.
+        assertEquals(2, r.candidatos());
+        assertEquals(240, r.mentores().get(0).minutosEnComun());
+    }
+
+    @Test
+    void laVistaPreviaRechazaPesosInvalidosOCursosVacios() {
+        ReglaNegocioException ceros = assertThrows(ReglaNegocioException.class,
+                () -> servicio.vistaPrevia(new VistaPreviaRequest(List.of(8), new PesosEmparejamientoRequest(0, 0, 0), null)));
+        assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, ceros.getEstado());
+        assertThrows(ReglaNegocioException.class,
+                () -> servicio.vistaPrevia(new VistaPreviaRequest(List.of(8), new PesosEmparejamientoRequest(101, 0, 0), null)));
+        assertThrows(ReglaNegocioException.class,
+                () -> servicio.vistaPrevia(new VistaPreviaRequest(List.of(8), new PesosEmparejamientoRequest(50, null, 50), null)));
+        assertThrows(com.techlink.exception.CursosCriticosInvalidosException.class,
+                () -> servicio.vistaPrevia(new VistaPreviaRequest(List.of(), null, null)));
     }
 }
