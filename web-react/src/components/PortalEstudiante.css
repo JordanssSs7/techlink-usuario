@@ -1,5 +1,5 @@
 /* Portal del estudiante (HU-04).
-   Paleta: azul marino (barra lateral y acentos), negro (texto y botones principales), blanco (fondo del contenido). */
+   Paleta: negro (barra lateral, texto y botones) sobre fondo claro, con bordes finos. Sin degradados ni ilustraciones. */
 .pt {
   --blanco: #ffffff;
   --fondo-2: #f6f6f7;
@@ -18,7 +18,7 @@
 
   display: flex;
   min-height: 100vh;
-  background: var(--blanco);
+  background: #f8f8f6;
   color: var(--tinta);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -29,64 +29,47 @@
   outline: 2px solid var(--marino); outline-offset: 2px;
 }
 
-/* ---------- Barra lateral (azul marino) ---------- */
+/* ---------- Barra lateral ---------- */
 .pt-lateral {
   position: sticky; top: 0; z-index: 30;
-  flex: none; display: flex; flex-direction: column; gap: 2rem;
-  width: var(--ancho-lateral); height: 100vh; padding: 1.75rem 1rem 1.25rem;
-  color: var(--blanco);
-  background: linear-gradient(180deg, var(--marino) 0%, var(--marino-osc) 100%);
+  flex: none; display: flex; flex-direction: column; gap: 1.5rem;
+  width: var(--ancho-lateral); height: 100vh; padding: 1.5rem 0.9rem 1rem;
+  color: var(--blanco); background: #0b0b0c;
 }
 .pt-lateral .pt-marca { padding: 0 0.6rem; }
-.pt-lateral .pt-focus, .pt-lateral button:focus-visible { outline-color: var(--blanco); }
+.pt-lateral button:focus-visible { outline-color: var(--blanco); }
 
 .pt-marca {
   display: flex; align-items: center; gap: 0.6rem;
   padding: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
   color: inherit; background: none; border: 0; cursor: pointer;
 }
-.pt-marca svg { transition: transform 0.4s var(--curva); }
-.pt-marca:hover svg { transform: rotate(-8deg) scale(1.08); }
 
-.pt-nav { display: flex; flex-direction: column; gap: 0.3rem; }
+/* El menú se agrupa por tema; si no cabe en pantallas bajas se desplaza por dentro */
+.pt-nav { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1.2rem; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent; }
+.pt-grupo { display: flex; flex-direction: column; gap: 0.1rem; }
 .pt-nav-tit {
-  padding: 0 0.75rem; margin-bottom: 0.4rem !important;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.45);
+  padding: 0 0.75rem; margin-bottom: 0.3rem !important;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.4);
 }
 .pt-enlace {
-  display: flex; align-items: center; gap: 0.75rem;
-  width: 100%; padding: 0.75rem; text-align: left;
-  font-size: 15px; font-weight: 500; color: rgba(255, 255, 255, 0.72);
-  background: transparent; border: 0; border-radius: 12px; cursor: pointer;
-  transition: color 0.2s, background 0.2s, transform 0.2s var(--curva);
+  display: flex; align-items: center; gap: 0.7rem;
+  width: 100%; padding: 0.55rem 0.75rem; text-align: left;
+  font-size: 14.5px; font-weight: 500; color: rgba(255, 255, 255, 0.72);
+  background: transparent; border: 0; border-radius: 10px; cursor: pointer;
+  transition: color 0.15s, background 0.15s;
 }
-.pt-enlace:hover { color: var(--blanco); background: rgba(255, 255, 255, 0.08); transform: translateX(3px); }
-.pt-enlace.activo {
-  color: var(--marino); font-weight: 700; background: var(--blanco);
-  box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.6);
-}
-.pt-enlace.activo:hover { transform: none; }
-
-.pt-usuario {
-  margin-top: auto; padding: 1rem;
-  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
-}
-.pt-usuario-fila { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
-.pt-avatar {
-  flex: none; display: grid; place-items: center; width: 40px; height: 40px;
-  font-size: 14px; font-weight: 700; color: var(--marino); background: var(--blanco); border-radius: 50%;
-}
-.pt-usuario-txt { min-width: 0; }
-.pt-usuario-nombre { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pt-usuario-dato { font-size: 12px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-enlace svg { flex: none; }
+.pt-enlace:hover { color: var(--blanco); background: rgba(255, 255, 255, 0.08); }
+.pt-enlace.activo { color: var(--blanco); font-weight: 600; background: rgba(255, 255, 255, 0.14); }
+.pt-inferior { display: flex; flex-direction: column; gap: 0.1rem; padding-top: 0.9rem; border-top: 1px solid rgba(255, 255, 255, 0.12); }
 .pt-salir {
-  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-  width: 100%; margin-top: 0.9rem; padding: 0.6rem;
-  font-size: 13px; font-weight: 600; color: var(--blanco);
-  background: transparent; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 999px; cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  display: flex; align-items: center; gap: 0.7rem;
+  width: 100%; padding: 0.55rem 0.75rem; text-align: left;
+  font-size: 14.5px; font-weight: 500; color: rgba(255, 255, 255, 0.55);
+  background: transparent; border: 0; border-radius: 10px; cursor: pointer; transition: color 0.15s, background 0.15s;
 }
-.pt-salir:hover { color: var(--marino); background: var(--blanco); border-color: var(--blanco); }
+.pt-salir:hover { color: var(--blanco); background: rgba(255, 255, 255, 0.08); }
 
 /* Barra superior y velo: solo en pantallas pequeñas */
 .pt-movil, .pt-velo { display: none; }
@@ -95,82 +78,50 @@
 .pt-principal { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .pt-cuerpo {
   flex: 1; width: 100%; max-width: 1440px; margin: 0 auto;
-  padding: clamp(1.5rem, 5vh, 3rem) clamp(1rem, 4vw, 2.5rem) 3.5rem;
+  padding: clamp(1rem, 3vh, 1.75rem) clamp(1rem, 4vw, 2.5rem) 3rem;
 }
 .pt-seccion { max-width: 1040px; margin: 0 auto; animation: pt-subir 0.5s var(--curva) backwards; }
 
-/* Buscar mentor: formulario a la izquierda; la imagen va en .pt-arte, a la derecha */
+/* Barra superior (solo en pantallas anchas): avisos y acceso a la cuenta */
+.pt-barra { display: flex; justify-content: flex-end; align-items: center; gap: 0.6rem; padding: 1rem clamp(1rem, 4vw, 2.5rem) 0; }
+.pt-campana {
+  position: relative; display: grid; place-items: center; width: 40px; height: 40px;
+  color: var(--tinta); background: var(--blanco); border: 1px solid var(--linea); border-radius: 50%; cursor: pointer; transition: background 0.15s;
+}
+.pt-campana:hover { background: #f1f1ef; }
+.pt-campana-punto {
+  position: absolute; top: -5px; right: -5px; display: grid; place-items: center; min-width: 19px; height: 19px; padding: 0 5px;
+  font-size: 11px; font-weight: 700; color: var(--blanco); background: #0b0b0c; border: 2px solid #f8f8f6; border-radius: 999px;
+}
+.pt-perfil {
+  display: flex; align-items: center; gap: 0.55rem; padding: 3px 14px 3px 3px;
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--tinta);
+  background: var(--blanco); border: 1px solid var(--linea); border-radius: 999px; cursor: pointer; transition: background 0.15s;
+}
+.pt-perfil:hover { background: #f1f1ef; }
+
+/* Contenido */
 .pt-zona { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .pt-fila { flex: 1; display: flex; align-items: flex-start; }
 .pt-buscar { max-width: 980px; }
-.pt-buscar h1 { margin-bottom: 1.5rem; }
-.pt-buscar-franja { display: none; }
-
-/* Imagen del lado derecho: de borde a borde y a toda la altura, sin marco.
-   Por la izquierda se funde con el blanco del contenido (como en el login). Se ve a color. */
-.pt-arte {
-  position: sticky; top: 0; align-self: flex-start;
-  flex: none; width: clamp(300px, 32vw, 560px); height: 100vh; margin: 0;
-  overflow: hidden;
-}
-.pt-arte img {
-  display: block; width: 100%; height: 100%;
-  object-fit: cover; object-position: 45% center;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22%);
-  mask-image: linear-gradient(to right, transparent 0%, #000 22%);
-  animation: pt-aparecer 0.8s ease backwards;
-}
-.pt-arte-cap {
-  position: absolute; inset: auto 0 0 0;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 0.85rem;
-  padding: 5rem 1.75rem 1.75rem 22%;
-  color: var(--blanco);
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.6) 55%, rgba(0, 0, 0, 0) 100%);
-}
-.pt-arte-cap p { font-size: 15px; line-height: 1.5; color: rgba(255, 255, 255, 0.92); }
-.pt-arte-cap .pt-hero-badge { position: static; display: inline-flex; }
+.pt-buscar h1 { margin-bottom: 1.25rem; }
 .pt-eyebrow {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--marino); margin-bottom: 0.8rem !important;
+  display: block; margin-bottom: 0.45rem !important;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gris);
 }
-.pt-eyebrow::before { content: ''; width: 18px; height: 2px; background: var(--marino); border-radius: 2px; }
-.pt h1 { font-size: clamp(30px, 4.5vw, 46px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 0.75rem; color: var(--tinta); }
-.pt-intro { font-size: 16px; color: var(--gris); margin-bottom: 2rem !important; line-height: 1.55; }
+.pt h1 { font-size: clamp(26px, 3.2vw, 34px); font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; margin-bottom: 0.6rem; color: var(--tinta); }
+.pt-intro { max-width: 66ch; font-size: 15.5px; color: var(--gris); margin-bottom: 1.5rem !important; line-height: 1.55; }
 .pt-estado { color: var(--gris); }
 
-/* Tarjeta de bienvenida en azul marino */
-.pt-tarjeta {
-  display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
-  padding: 2rem; color: var(--blanco);
-  background: radial-gradient(120% 140% at 100% 0%, var(--marino-2) 0%, var(--marino) 55%, var(--marino-osc) 100%);
-  border-radius: 20px; box-shadow: var(--sombra);
-}
-.pt-tarjeta > div { flex: 1 1 280px; }
-.pt-tarjeta h2 { font-size: 22px; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-.pt-tarjeta p { color: rgba(255, 255, 255, 0.75); line-height: 1.55; }
-
-/* ---------- Footer (ocupa todo el ancho, debajo del contenido y de la imagen) ---------- */
+/* Pie de página: una sola línea */
 .pt-footer {
-  position: relative; z-index: 1;
-  padding: 2.75rem clamp(1rem, 4vw, 2.5rem) 1.75rem;
-  color: rgba(255, 255, 255, 0.7); background: var(--tinta);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 1rem clamp(1rem, 4vw, 2.5rem) 1.5rem; font-size: 13px; color: var(--gris-claro);
 }
-.pt-footer-arriba {
-  display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem 3rem; flex-wrap: wrap;
-  padding-bottom: 1.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-.pt-footer-marca { display: flex; align-items: center; gap: 0.55rem; font-size: 18px; font-weight: 700; color: var(--blanco); }
-.pt-footer-desc { margin-top: 0.6rem !important; font-size: 14px; line-height: 1.5; max-width: 34ch; }
-.pt-footer-nav { display: flex; flex-wrap: wrap; gap: 0.75rem 1.75rem; }
-.pt-footer-nav button {
-  padding: 0; font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.8);
-  background: none; border: 0; cursor: pointer; transition: color 0.2s;
-}
-.pt-footer-nav button:hover { color: var(--blanco); text-decoration: underline; text-underline-offset: 4px; }
-.pt-footer-copy { margin-top: 1.25rem !important; font-size: 13px; color: rgba(255, 255, 255, 0.5); }
+.pt-footer button { padding: 0; font: inherit; color: inherit; text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; cursor: pointer; }
+.pt-footer button:hover { color: var(--tinta); }
 
-/* ---------- Buscar mentor: pasos ---------- */
+/* ---------- Buscar mentor ---------- */
 .bm-pasos {
   position: relative;
   display: flex; list-style: none; padding: 0; margin: 0 0 1.75rem;
@@ -454,7 +405,7 @@
   padding: 0.85rem 1.6rem; font-size: 15px; font-weight: 600; border-radius: 999px; cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s var(--curva), box-shadow 0.2s, opacity 0.2s;
 }
-.bm-primario span, .pt-tarjeta .bm-primario span { transition: transform 0.25s var(--curva); }
+.bm-primario span { transition: transform 0.25s var(--curva); }
 .bm-primario:hover:not(:disabled) span { transform: translateX(4px); }
 .bm-primario { color: var(--blanco); background: var(--tinta); border: 1px solid var(--tinta); }
 .bm-primario:hover:not(:disabled) { background: var(--marino); border-color: var(--marino); box-shadow: 0 10px 22px -12px rgba(11, 11, 12, 0.7); }
@@ -558,46 +509,6 @@
 @keyframes bm-celda-pop { from { transform: scale(0.85); } to { transform: none; } }
 @keyframes bm-anillo { from { stroke-dasharray: 0 100; } }
 @keyframes bm-girar { to { transform: rotate(360deg); } }
-@keyframes pt-flotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-@keyframes pt-latido { 0% { box-shadow: 0 0 0 0 rgba(11, 11, 12, 0.55); } 100% { box-shadow: 0 0 0 8px rgba(11, 11, 12, 0); } }
-
-/* ---------- Hero de Buscar mentor ---------- */
-.pt-hero {
-  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); align-items: center;
-  gap: clamp(1.5rem, 4vw, 3rem); margin-bottom: 2.5rem;
-}
-.pt-hero .pt-intro { margin-bottom: 1.5rem !important; max-width: 46ch; }
-.pt-hero-puntos { display: flex; flex-direction: column; gap: 0.7rem; list-style: none; padding: 0; margin: 0; }
-.pt-hero-puntos li {
-  display: flex; align-items: center; gap: 0.75rem; font-size: 15px; color: #2a2a2e;
-  animation: pt-subir 0.5s var(--curva) backwards;
-}
-.pt-hero-puntos li:nth-child(2) { animation-delay: 0.08s; }
-.pt-hero-puntos li:nth-child(3) { animation-delay: 0.16s; }
-.pt-hero-puntos span {
-  flex: none; display: grid; place-items: center; width: 28px; height: 28px;
-  font-size: 13px; font-weight: 700; color: var(--marino); background: var(--marino-suave); border-radius: 50%;
-}
-.pt-hero-img {
-  position: relative; margin: 0; isolation: isolate;
-  animation: pt-subir 0.7s var(--curva) 0.1s backwards;
-}
-.pt-hero-img::before {
-  content: ''; position: absolute; inset: 18px -14px -14px 18px; z-index: -1;
-  background: var(--marino); border-radius: 26px;
-}
-.pt-hero-img img {
-  display: block; width: 100%; height: clamp(280px, 34vw, 380px); object-fit: cover; object-position: 50% 30%;
-  border-radius: 24px; box-shadow: var(--sombra);
-}
-.pt-hero-badge {
-  position: absolute; left: -16px; bottom: 28px;
-  display: flex; align-items: center; gap: 0.55rem;
-  padding: 0.65rem 1rem; font-size: 13px; font-weight: 600; color: var(--tinta);
-  background: var(--blanco); border-radius: 999px; box-shadow: 0 14px 30px -14px rgba(11, 11, 12, 0.55);
-  animation: pt-flotar 4s ease-in-out infinite;
-}
-.pt-hero-punto { width: 8px; height: 8px; background: #0b0b0c; border-radius: 50%; animation: pt-latido 1.6s ease-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   .pt *, .pt *::before, .pt *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
@@ -609,8 +520,7 @@
   .pt-movil {
     position: sticky; top: 0; z-index: 25;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0.85rem 1rem; color: var(--blanco); background: var(--marino);
-    box-shadow: 0 6px 20px -14px rgba(0, 0, 0, 0.6);
+    padding: 0.85rem 1rem; color: var(--blanco); background: #0b0b0c;
   }
   .pt-hamburguesa {
     display: flex; flex-direction: column; justify-content: center; gap: 5px;
@@ -639,26 +549,12 @@
   }
   .bm-horario { grid-template-columns: 1fr; }
   .bm-resumen { position: static; }
-  .pt-arte { top: 4.4rem; height: calc(100vh - 4.4rem); }
-}
-
-/* Hero en una sola columna cuando no hay espacio para texto e imagen lado a lado */
-@media (max-width: 900px) {
-  .pt-hero { grid-template-columns: 1fr; gap: 1.5rem; }
-  .pt-hero-img { order: -1; margin-right: 12px; }
-  .pt-hero-img img { height: 260px; }
-  .pt-arte { display: none; }
-  .pt-buscar-franja {
-    display: block; width: 100%; height: 240px; margin-bottom: 1.5rem;
-    object-fit: cover; object-position: center 30%; border-radius: 18px;
-  }
+  .pt-barra { display: none; }
 }
 
 /* ---------- Celular ---------- */
 @media (max-width: 640px) {
   .pt-cuerpo { padding-top: 1.25rem; }
-  .pt-hero-img img { height: 210px; }
-  .pt-hero-badge { left: 12px; bottom: 12px; }
   .bm-pasos li { font-size: 12px; }
   .bm-panel { padding: 1.1rem; border-radius: 16px; }
   .bm-panel h2 { font-size: 19px; }
@@ -674,7 +570,6 @@
   .bm-avatar { width: 52px; height: 52px; font-size: 18px; }
   .bm-anillo { width: 60px; height: 60px; }
   .bm-anillo span { font-size: 16px; }
-  .pt-footer { padding-top: 2.25rem; }
 }
 
 /* ---------- Buscar mentor · paso 1 (cursos): casillas arriba y lista abajo ----------
@@ -756,3 +651,13 @@
   .bm-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bm-slot:last-child { grid-column: 1 / -1; }
 }
+
+/* ---------- Estilo editorial en todas las pantallas del estudiante ---------- */
+.pt-eyebrow { display: flex !important; align-items: center; gap: 0.6rem; font-size: 11.5px !important; font-weight: 600 !important; letter-spacing: 0.14em !important; color: #55555b !important; }
+.pt-eyebrow::before { content: ''; width: 28px; height: 1.5px; background: currentColor; }
+.pt h1 { font-family: 'Sora', 'DM Sans', system-ui, sans-serif; font-size: clamp(30px, 4vw, 44px) !important; font-weight: 700 !important; letter-spacing: -0.04em !important; line-height: 1.05 !important; }
+.pt h1 span { color: #9a9aa0; }
+.pt-intro { font-size: 16px !important; color: #55555b !important; }
+.pt h2, .pt h3, .pt h4 { font-family: 'Sora', 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
+.pt [class$="-titulo"], .pt [class$="-titulo-tarjeta"], .pt [class$="-rango"], .pt [class$="-subtitulo"] { font-family: 'Sora', 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
+.pt input, .pt select, .pt textarea, .pt button { font-family: 'DM Sans', system-ui, sans-serif; }

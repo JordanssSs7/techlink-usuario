@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import './PortalEstudiante.css';
 import { useAuth } from '../auth/authContext';
+import InicioEstudiante from './InicioEstudiante';
 import BuscarMentor from './BuscarMentor';
 import MisSesiones from './MisSesiones';
 import Foro from './Foro';
@@ -9,7 +10,6 @@ import Seguimiento from './Seguimiento';
 import Calendario from './Calendario';
 import CentroAyuda from './CentroAyuda';
 import Notificaciones from './Notificaciones';
-import InicioEstudiante from './InicioEstudiante';
 import useNotificacionesPendientes from './useNotificaciones';
 import MentoresRanking from './MentoresRanking';
 import MiCuenta from './MiCuenta';
@@ -17,9 +17,6 @@ import PostularMentor from './PostularMentor';
 import Avatar from './Avatar';
 import { useFotoPropia } from './fotoPerfil';
 import AsistenteChat from './AsistenteChat';
-import imgMentoria from '../assets/buscar-mentor.webp';
-
-const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 
 const trazo = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
 
@@ -86,6 +83,16 @@ const SECCIONES = [
   }
 ];
 
+// El menú se agrupa por tema para que no sea una lista larga: lo de cada día arriba, y lo de la cuenta abajo.
+const GRUPOS = [
+  { titulo: '', ids: ['inicio'] },
+  { titulo: 'Mentorías', ids: ['buscar', 'sesiones', 'calendario'] },
+  { titulo: 'Mi avance', ids: ['progreso', 'charlas'] },
+  { titulo: 'Comunidad', ids: ['mentores', 'foro', 'postular'] }
+];
+const INFERIOR = ['notificaciones', 'ayuda', 'cuenta'];
+const porId = (id) => SECCIONES.find((x) => x.id === id);
+
 function Logo({ size = 26 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
@@ -106,9 +113,7 @@ export default function PortalEstudiante() {
 
   const primerNombre = (usuario.nombres || '').split(' ')[0];
   const apellidos = usuario.apellidos && usuario.apellidos !== '-' ? usuario.apellidos : '';
-  const nombreCompleto = [usuario.nombres, apellidos].filter(Boolean).join(' ');
   const iniciales = [usuario.nombres, apellidos].filter(Boolean).map((p) => p.trim()[0]).join('').slice(0, 2).toUpperCase();
-  const ciclo = usuario.ciclo ? `${ROMANOS[usuario.ciclo - 1] || usuario.ciclo} ciclo` : null;
 
   // Escape cierra el menú en celular.
   useEffect(() => {
@@ -123,6 +128,23 @@ export default function PortalEstudiante() {
     setMenuAbierto(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Un enlace del menú; el de notificaciones lleva el número de avisos sin leer.
+  const enlace = (s) => (
+    <button
+      key={s.id}
+      type="button"
+      className={`pt-enlace${seccion === s.id ? ' activo' : ''}`}
+      aria-current={seccion === s.id ? 'page' : undefined}
+      onClick={() => irA(s.id)}
+    >
+      <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>{s.icono}</svg>
+      {s.titulo}
+      {s.id === 'notificaciones' && pendientes > 0 && (
+        <span className="no-badge" aria-label={`${pendientes} sin leer`}>{pendientes}</span>
+      )}
+    </button>
+  );
 
   return (
     <div className={`pt${menuAbierto ? ' menu-abierto' : ''}`}>
@@ -149,35 +171,18 @@ export default function PortalEstudiante() {
         </button>
 
         <nav className="pt-nav" aria-label="Secciones">
-          <p className="pt-nav-tit">Menú</p>
-          {SECCIONES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`pt-enlace${seccion === s.id ? ' activo' : ''}`}
-              aria-current={seccion === s.id ? 'page' : undefined}
-              onClick={() => irA(s.id)}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>{s.icono}</svg>
-              {s.titulo}
-              {s.id === 'notificaciones' && pendientes > 0 && (
-                <span className="no-badge" aria-label={`${pendientes} sin leer`}>{pendientes}</span>
-              )}
-            </button>
+          {GRUPOS.map((g) => (
+            <div key={g.titulo || 'inicio'} className="pt-grupo">
+              {g.titulo && <p className="pt-nav-tit">{g.titulo}</p>}
+              {g.ids.map((id) => enlace(porId(id)))}
+            </div>
           ))}
         </nav>
 
-        <div className="pt-usuario">
-          <div className="pt-usuario-fila">
-            <Avatar className="pt-avatar" idUsuario={fotoPropia.idUsuario} tieneFoto={fotoPropia.tieneFoto}
-              version={fotoPropia.version} iniciales={iniciales} tamano={40} />
-            <div className="pt-usuario-txt">
-              <p className="pt-usuario-nombre">{nombreCompleto}</p>
-              <p className="pt-usuario-dato">{ciclo || usuario.correoInstitucional}</p>
-            </div>
-          </div>
+        <div className="pt-inferior">
+          {INFERIOR.map((id) => enlace(porId(id)))}
           <button type="button" className="pt-salir" onClick={logout}>
-            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>
               <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" /><path d="M10 17l-5-5 5-5" /><path d="M5 12h11" />
             </svg>
             Cerrar sesión
@@ -190,14 +195,30 @@ export default function PortalEstudiante() {
       <div className="pt-zona">
       <div className="pt-fila">
       <div className="pt-principal">
+        {/* Barra superior (solo en pantallas anchas): avisos y acceso a la cuenta */}
+        <div className="pt-barra">
+          <button type="button" className="pt-campana" onClick={() => irA('notificaciones')}
+            aria-label={pendientes > 0 ? `Notificaciones, ${pendientes} sin leer` : 'Notificaciones'}>
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...trazo}>
+              <path d="M6 9a6 6 0 0 1 12 0c0 6 2 7.5 2 7.5H4S6 15 6 9" /><path d="M10 20a2 2 0 0 0 4 0" />
+            </svg>
+            {pendientes > 0 && <span className="pt-campana-punto" aria-hidden="true">{pendientes > 9 ? '9+' : pendientes}</span>}
+          </button>
+          <button type="button" className="pt-perfil" onClick={() => irA('cuenta')} aria-label="Mi cuenta">
+            <Avatar idUsuario={fotoPropia.idUsuario} tieneFoto={fotoPropia.tieneFoto} version={fotoPropia.version} iniciales={iniciales} tamano={34} />
+            <span>{primerNombre}</span>
+          </button>
+        </div>
         <div className="pt-cuerpo">
-          {seccion === 'inicio' && <InicioEstudiante key="inicio" nombre={primerNombre} pendientes={pendientes} irA={irA} />}
+          {seccion === 'inicio' && (
+            <section key="inicio" className="pt-seccion">
+              <InicioEstudiante primerNombre={primerNombre} irA={irA} />
+            </section>
+          )}
           {seccion === 'buscar' && (
             <section key="buscar" className="pt-seccion pt-buscar">
-              {/* En pantallas angostas la imagen se muestra aquí como franja; en anchas va en el lado derecho. */}
-              <img className="pt-buscar-franja" src={imgMentoria} alt="" aria-hidden="true" />
               <p className="pt-eyebrow">Mentorías</p>
-              <h1>Buscar mentor</h1>
+              <h1>Buscar <span>mentor</span></h1>
               <BuscarMentor />
             </section>
           )}
@@ -212,7 +233,7 @@ export default function PortalEstudiante() {
           {seccion === 'postular' && (
             <section key="postular" className="pt-seccion">
               <p className="pt-eyebrow">Acreditación</p>
-              <h1>Ser mentor</h1>
+              <h1>Ser <span>mentor</span></h1>
               <p className="pt-intro">Si ya llevas varios ciclos, puedes postular para guiar a otros alumnos.</p>
               <PostularMentor />
             </section>
@@ -220,7 +241,7 @@ export default function PortalEstudiante() {
           {seccion === 'progreso' && (
             <section key="progreso" className="pt-seccion">
               <p className="pt-eyebrow">Tu avance</p>
-              <h1>Mi progreso</h1>
+              <h1>Mi <span>progreso</span></h1>
               <p className="pt-intro">Marca las metas de la semana que acuerdas con tu mentor y mira cómo evolucionan tus horas de asesoría y tu rendimiento.</p>
               <Seguimiento />
             </section>
@@ -228,7 +249,7 @@ export default function PortalEstudiante() {
           {seccion === 'charlas' && (
             <section key="charlas" className="pt-seccion">
               <p className="pt-eyebrow">Comunidad</p>
-              <h1>Charlas virtuales</h1>
+              <h1>Charlas <span>virtuales</span></h1>
               <p className="pt-intro">Te recomendamos charlas según tus intereses y tus cursos críticos. Inscríbete y la verás en tu calendario.</p>
               <Charlas />
             </section>
@@ -244,7 +265,7 @@ export default function PortalEstudiante() {
           {seccion === 'foro' && (
             <section key="foro" className="pt-seccion">
               <p className="pt-eyebrow">Comunidad</p>
-              <h1>Foro de consultas</h1>
+              <h1>Foro de <span>consultas</span></h1>
               <p className="pt-intro">Pregunta tus dudas por curso y ayuda a otros con lo que sabes. Quien pregunta puede marcar la respuesta que le sirvió.</p>
               <Foro />
             </section>
@@ -260,7 +281,7 @@ export default function PortalEstudiante() {
           {seccion === 'ayuda' && (
             <section key="ayuda" className="pt-seccion">
               <p className="pt-eyebrow">Soporte</p>
-              <h1>Centro de ayuda</h1>
+              <h1>Centro de <span>ayuda</span></h1>
               <p className="pt-intro">Respuestas a las preguntas más frecuentes sobre TechLink.</p>
               <CentroAyuda />
             </section>
@@ -268,7 +289,7 @@ export default function PortalEstudiante() {
           {seccion === 'cuenta' && (
             <section key="cuenta" className="pt-seccion">
               <p className="pt-eyebrow">Tu perfil</p>
-              <h1>Mi cuenta</h1>
+              <h1>Mi <span>cuenta</span></h1>
               <p className="pt-intro">Así te ven los demás. Cuéntales quién eres y qué te interesa.</p>
               <MiCuenta />
             </section>
@@ -276,7 +297,7 @@ export default function PortalEstudiante() {
           {seccion === 'sesiones' && (
             <section key="sesiones" className="pt-seccion">
               <p className="pt-eyebrow">Mentorías</p>
-              <h1>Mis sesiones</h1>
+              <h1>Mis <span>sesiones</span></h1>
               <p className="pt-intro">Tu historial de sesiones: califica las que terminaron, y cancela o reprograma las próximas.</p>
               <MisSesiones />
             </section>
@@ -284,20 +305,6 @@ export default function PortalEstudiante() {
         </div>
 
       </div>
-
-      {/* Lado derecho de Buscar mentor: la imagen ocupa toda la altura, sin marco */}
-      {seccion === 'buscar' && (
-        <figure className="pt-arte">
-          <img src={imgMentoria} alt="Estudiante en una videollamada con su mentor desde la biblioteca" />
-          <figcaption className="pt-arte-cap">
-            <span className="pt-hero-badge">
-              <span className="pt-hero-punto" aria-hidden="true" />
-              Mentorías 1 a 1 en línea
-            </span>
-            <p>Conecta con un estudiante de ciclos superiores que domina los cursos donde necesitas apoyo.</p>
-          </figcaption>
-        </figure>
-      )}
       </div>
 
       </div>

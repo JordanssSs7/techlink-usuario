@@ -320,15 +320,22 @@ export default function MentoresRanking() {
       <ol className="cu-ranking">
         {mentores?.map((m) => (
           <li key={m.idMentor} className={`cu-mentor${m.posicion <= 3 ? ' podio' : ''}`}>
-            <span className="cu-puesto" aria-label={`Puesto ${m.posicion}`}>{m.posicion}</span>
-            <Avatar idUsuario={m.idUsuario} tieneFoto={m.tieneFoto} iniciales={iniciales(m)} tamano={56} />
+            <span className="cu-puesto" aria-label={`Puesto ${m.posicion}`}>{String(m.posicion).padStart(2, '0')}</span>
+            <Avatar idUsuario={m.idUsuario} tieneFoto={m.tieneFoto} iniciales={iniciales(m)} tamano={60} />
             <div className="cu-mentor-texto">
               <h3 className="cu-nombre">{nombreCompleto(m)}</h3>
               {m.especialidad && <p className="cu-sub">{m.especialidad}</p>}
+              <Insignias lista={m.insignias} />
+              {m.cursos.length > 0 && (
+                <ul className="cu-cursos-chips" aria-label="Cursos">
+                  {m.cursos.slice(0, 3).map((curso) => <li key={curso}>{curso}</li>)}
+                  {m.cursos.length > 3 && <li className="mas">+{m.cursos.length - 3}</li>}
+                </ul>
+              )}
+            </div>
+            <div className="cu-mentor-cifras">
               <Calificacion promedio={m.promedio} total={m.totalCalificaciones} />
               <p className="cu-datos"><span><strong>{horas(m.horasDictadas)}</strong> dictadas</span></p>
-              <Insignias lista={m.insignias} />
-              {m.cursos.length > 0 && <p className="cu-cursos-linea">{m.cursos.slice(0, 3).join(' · ')}{m.cursos.length > 3 ? ` · +${m.cursos.length - 3}` : ''}</p>}
             </div>
             <button type="button" className="cu-boton" onClick={() => setVerId(m.idMentor)}>Ver perfil</button>
           </li>

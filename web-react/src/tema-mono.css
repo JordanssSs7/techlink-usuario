@@ -12,17 +12,6 @@
 
 /* La interfaz es blanco y negro, pero las imágenes (fotos y la mascota LlamaLink) y el logo de Google conservan su color. */
 
-/* Barra lateral del portal: negra, con la esquina derecha redondeada y un brillo suave arriba. */
-.pt-lateral {
-  background:
-    radial-gradient(120% 60% at 0% 0%, rgba(255, 255, 255, 0.1), transparent 60%),
-    linear-gradient(180deg, #161618 0%, #000000 100%);
-  border-radius: 0 30px 30px 0;
-}
-.pt-enlace svg, .pt-enlace img { flex: none; transition: transform 0.35s var(--mono-curva); }
-.pt-enlace:hover svg { transform: translateY(-2px) rotate(-8deg) scale(1.12); }
-.pt-enlace.activo svg { transform: none; }
-
 /* Botones y píldoras: se hunden un poco al pulsar. */
 button:not(:disabled):active, a.login-submit:active { transform: scale(0.98); }
 

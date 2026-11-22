@@ -114,6 +114,39 @@
 .cu-sugerencias { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
 @media (max-width: 640px) { .cu-filtros label, .cu-filtros select { width: 100%; } }
 
+/* ---------- Mentores: filtros en una fila y ranking ordenado en columnas ---------- */
+.cu:has(.cu-ranking) { max-width: 1040px; gap: 1.1rem; }
+.cu-filtros { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: end; gap: 1rem; padding: 1.1rem 1.25rem; background: #fff; border: 1px solid #e6e6e3; border-radius: 16px; box-shadow: none; }
+.cu-filtros label { margin: 0; display: flex; flex-direction: column; gap: 0.4rem; font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #55555b; }
+.cu-filtros select { width: 100%; min-width: 0; padding: 0.65rem 0.8rem; font-size: 14.5px; letter-spacing: 0; text-transform: none; color: #0b0b0c; background: #fafaf8; border: 1px solid #e0e0dc; border-radius: 10px; }
+.cu-filtros select:hover { border-color: #b8b8b4; }
+.cu-filtros .cu-boton { padding: 0.65rem 1rem; white-space: nowrap; }
+
+.cu-ranking { gap: 0.7rem; }
+.cu-mentor { display: grid; grid-template-columns: 44px 60px minmax(0, 1fr) 150px auto; align-items: center; gap: 1.1rem; padding: 1rem 1.25rem; border: 1px solid #e6e6e3; border-left: 1px solid #e6e6e3; border-radius: 16px; box-shadow: none; transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, box-shadow 0.25s; }
+.cu-mentor:hover { transform: translateY(-2px); border-color: #bdbdb8; box-shadow: 0 16px 28px -22px rgba(0, 0, 0, 0.5); }
+.cu-mentor.podio { border-left: 1px solid #e6e6e3; background: linear-gradient(90deg, #fff 70%, #f7f7f5); }
+.cu-puesto { width: auto; height: auto; justify-self: center; font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.04em; color: #b8b8b4; background: none; border-radius: 0; }
+.cu-mentor.podio .cu-puesto { color: #0b0b0c; background: none; }
+.cu-mentor-texto { gap: 0.2rem; }
+.cu-mentor-texto .cu-nombre { font-family: 'Sora', sans-serif; font-size: 17px; letter-spacing: -0.02em; }
+.cu-mentor-texto .cu-sub { font-size: 13.5px; }
+.cu-cursos-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem !important; }
+.cu-cursos-chips li { padding: 0.2rem 0.65rem; font-size: 12px; color: #3a3a40; background: #f3f2ee; border-radius: 999px; }
+.cu-cursos-chips li.mas { color: #6b6b72; background: none; border: 1px solid #e0e0dc; }
+.cu-mentor-cifras { display: flex; flex-direction: column; gap: 0.35rem; padding-left: 1.1rem; border-left: 1px solid #ecece8; }
+.cu-mentor-cifras .cu-datos { font-size: 13px; }
+.cu-mentor .cu-boton { padding: 0.55rem 1.15rem; font-size: 13.5px; }
+.cu-mentor .cu-boton:hover { color: #fff; background: #0b0b0c; }
+
+@media (max-width: 900px) {
+  .cu-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cu-mentor { grid-template-columns: 36px 56px minmax(0, 1fr); }
+  .cu-mentor-cifras { grid-column: 2 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; padding: 0.6rem 0 0; border-left: 0; border-top: 1px solid #ecece8; }
+  .cu-mentor .cu-boton { grid-column: 2 / -1; width: 100%; }
+}
+@media (max-width: 560px) { .cu-filtros { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .cu-mentor:hover { transform: none; } }
 /* Indicaciones para sacar el comprobante de notas (HU-03) */
 .cu-pasos { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.9rem 1rem; font-size: 14px; background: #FBF9E4; border-left: 4px solid #122C4F; border-radius: 10px; }
 .cu-pasos ol { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; }
