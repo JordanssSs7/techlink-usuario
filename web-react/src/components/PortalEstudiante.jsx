@@ -302,7 +302,7 @@ export default function PortalEstudiante() {
 
       </div>
 
-      <AsistenteChat />
+      <AsistenteChat contexto={seccion} rol="ESTUDIANTE" />
     </div>
   );
 }

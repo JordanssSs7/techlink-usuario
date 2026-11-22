@@ -32,13 +32,13 @@
 .ac-aviso {
   position: absolute; right: calc(100% + 12px); top: 50%;
   margin: 0; padding: 0.6rem 0.9rem; width: max-content; max-width: 220px;
-  font-size: 13px; line-height: 1.35; color: var(--ac-tinta);
-  background: var(--ac-blanco); border: 1px solid var(--ac-linea); border-radius: 12px;
-  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.45);
+  font-size: 13px; line-height: 1.35; color: #fff;
+  background: #0b0b0c; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 12px;
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.6);
   opacity: 0; pointer-events: none; transform: translate(6px, -50%);
   transition: opacity 0.18s, transform 0.18s;
 }
-.ac-aviso strong { color: var(--ac-marino); }
+.ac-aviso strong { color: #FBF9E4; }
 .ac-flotante.aviso-derecha .ac-aviso { right: auto; left: calc(100% + 12px); transform: translate(-6px, -50%); }
 .ac-flotante:hover .ac-aviso, .ac-flotante:focus-within .ac-aviso { opacity: 1; transform: translate(0, -50%); }
 

@@ -97,3 +97,25 @@
   .co-soporte .co-boton { width: 100%; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { .co-boton, .co-consulta { transition: none; } }
+
+/* Aviso de LlamaLink cuando la moderación no deja publicar (422) */
+.co-llama-velo { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: 1rem; background: rgba(0, 0, 0, 0.5); }
+.co-llama { display: flex; align-items: center; gap: 1.1rem; width: min(520px, 100%); padding: 1.4rem; background: #fff; border-radius: 18px; border-top: 6px solid #122C4F; box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6); }
+.co-llama img { flex: none; width: 110px; height: 110px; object-fit: contain; }
+.co-llama > div { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+.co-llama strong { font-size: 17px; color: #122C4F; }
+.co-llama p { margin: 0; font-size: 15px; line-height: 1.5; color: #1b1f27; }
+@media (max-width: 480px) { .co-llama { flex-direction: column; text-align: center; } .co-llama > div { align-items: center; } }
+
+/* Hilos de respuestas, como los comentarios de Instagram (HU-17) */
+.co-hilo-acciones { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.4rem; }
+.co-enlace { padding: 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--co-gris); background: none; border: 0; cursor: pointer; }
+.co-enlace:hover { color: var(--co-marino); text-decoration: underline; }
+.co-hijos { display: flex; flex-direction: column; gap: 0.6rem; margin: 0.6rem 0 0 0.4rem; padding: 0 0 0 1rem; border-left: 2px solid var(--co-linea); }
+.co-hija { display: flex; flex-direction: column; gap: 0.3rem; }
+.co-hilo-form { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.6rem; }
+.co-boton.chico.primario { color: #fff; background: var(--co-marino); }
+
+/* Editar, eliminar y reportar en el foro */
+.co-enlace.peligro:hover { color: #b3261e; }
+.co-editado { font-size: 12px; color: var(--co-gris); }

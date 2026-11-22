@@ -12,6 +12,7 @@ import CentroAyuda from './CentroAyuda';
 import Notificaciones from './Notificaciones';
 import EstadisticasMentor from './EstadisticasMentor';
 import InicioMentor from './InicioMentor';
+import AsistenteChat from './AsistenteChat';
 import Avatar from './Avatar';
 import { useFotoPropia } from './fotoPerfil';
 import useNotificacionesPendientes from './useNotificaciones';
@@ -39,7 +40,7 @@ const ENCABEZADOS = {
   metas: ['Seguimiento', 'Metas de mis estudiantes', 'Acuerda metas semanales con tus estudiantes y mira cuáles van cumpliendo entre una sesión y otra.'],
   estadisticas: ['Tu desempeño', 'Estadísticas', 'Tus sesiones, horas y calificación mes a mes, y tu constancia de mentoría en PDF.'],
   notificaciones: ['Tus avisos', 'Notificaciones', 'Confirmaciones, cambios de tus sesiones, recordatorios y anuncios. En Preferencias eliges qué recibir.'],
-  foro: ['Comunidad', 'Foro de consultas', 'Responde las dudas de los estudiantes por curso: tu experiencia es la que más ayuda.'],
+  foro: ['Comunidad', 'Foro de consultas', 'Publica tus propias preguntas con «Nueva consulta» y responde las de los estudiantes y otros mentores: entre todos aprendemos más.'],
   perfil: ['Tu perfil de mentor', 'Mi perfil', 'Lo que registres aquí se usa para recomendarte a los estudiantes y para que agenden contigo.'],
   cuenta: ['Tu cuenta', 'Mis datos', 'Tu foto y tu descripción se ven en tu perfil público de mentor.'],
   ayuda: ['Soporte', 'Centro de ayuda', 'Respuestas a las preguntas más frecuentes sobre TechLink.']
@@ -172,6 +173,8 @@ export default function PortalMentor() {
           </div>
         </div>
       </div>
+
+      <AsistenteChat contexto={seccion} rol="MENTOR" />
     </div>
   );
 }

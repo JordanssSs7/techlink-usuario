@@ -186,7 +186,8 @@ const ESTADOS_VOZ = {
 
 // HU-04: asistente de chat grande (historial de conversaciones, escritura y voz).
 // El estudiante conversa con sus palabras; el agente entiende cursos y horario y, cuando los tiene, muestra el top 3.
-export default function AsistenteChat() {
+// contexto: la sección donde está el usuario (en el foro el aviso del botón le recuerda cuidar lo que publica). rol: ESTUDIANTE o MENTOR.
+export default function AsistenteChat({ contexto = '', rol = 'ESTUDIANTE' } = {}) {
   const { authFetch, usuario } = useAuth();
   const idUsuario = usuario?.id ?? usuario?.correoInstitucional ?? 'anonimo';
   const primerNombre = (usuario?.nombres || '').split(' ')[0];
@@ -861,9 +862,16 @@ export default function AsistenteChat() {
           style={posicion ? { left: posicion.x, top: posicion.y } : undefined}
         >
           {/* El aviso solo aparece al pasar el mouse por el botón */}
-          <p className="ac-aviso" aria-hidden="true">
-            ¿Necesitas ayuda?<br /><strong>Pregunta a LlamaLink</strong>
-          </p>
+          {contexto === 'foro' ? (
+            <p className="ac-aviso" aria-hidden="true">
+              Cuidado con lo que publicas<br />
+              <strong>{rol === 'MENTOR' ? 'Eres ejemplo para los estudiantes 💙' : 'En TechLink aprendemos con respeto 💙'}</strong>
+            </p>
+          ) : (
+            <p className="ac-aviso" aria-hidden="true">
+              ¿Necesitas ayuda?<br /><strong>Pregunta a LlamaLink</strong>
+            </p>
+          )}
           <button
             type="button"
             className="ac-boton"

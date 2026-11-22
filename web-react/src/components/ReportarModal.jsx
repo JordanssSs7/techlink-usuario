@@ -13,9 +13,10 @@ const MOTIVOS = [
 const MIN_DESCRIPCION = 10;
 const MAX_DESCRIPCION = 500;
 
-// HU-29: ventana para reportar una sesión (tipo "SESION" con idSesion) o a un usuario (tipo "USUARIO" con idUsuario).
+// HU-29: ventana para reportar una sesión (tipo "SESION" con idSesion), a un usuario ("USUARIO" con idUsuario) o algo del foro
+// ("CONSULTA" con idConsulta o "RESPUESTA" con idRespuesta).
 // Un administrador revisa el reporte desde el panel. Escape o tocar el fondo la cierra.
-export default function ReportarModal({ tipo, idSesion, idUsuario, titulo, subtitulo, onCerrar }) {
+export default function ReportarModal({ tipo, idSesion, idUsuario, idConsulta, idRespuesta, titulo, subtitulo, onCerrar }) {
   const { authFetch } = useAuth();
   const [motivo, setMotivo] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -55,7 +56,10 @@ export default function ReportarModal({ tipo, idSesion, idUsuario, titulo, subti
       const response = await authFetch('/api/reportes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo, idSesion: idSesion ?? null, idUsuario: idUsuario ?? null, motivo, descripcion: descripcion.trim() })
+        body: JSON.stringify({
+          tipo, idSesion: idSesion ?? null, idUsuario: idUsuario ?? null, idConsulta: idConsulta ?? null, idRespuesta: idRespuesta ?? null,
+          motivo, descripcion: descripcion.trim()
+        })
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
