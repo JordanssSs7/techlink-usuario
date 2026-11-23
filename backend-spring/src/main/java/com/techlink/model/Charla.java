@@ -50,6 +50,14 @@ public class Charla {
     @Column(nullable = false, length = 500)
     private String enlace;
 
+    // Foto del invitado (V31): data URL reducida, que la tarjeta de la charla usa de fondo.
+    @Column(name = "imagen", columnDefinition = "LONGTEXT")
+    private String imagen;
+
+    // Enlace secreto del invitado (V30): solo lo conoce el administrador. Nunca sale en las respuestas a estudiantes ni mentores.
+    @Column(name = "token_invitado", length = 64)
+    private String tokenInvitado;
+
     @Column(nullable = false)
     private boolean activo = true;
 
@@ -79,6 +87,12 @@ public class Charla {
 
     public LocalTime getHoraFin() { return horaFin; }
     public void setHoraFin(LocalTime horaFin) { this.horaFin = horaFin; }
+
+    public String getImagen() { return imagen; }
+    public void setImagen(String imagen) { this.imagen = imagen; }
+
+    public String getTokenInvitado() { return tokenInvitado; }
+    public void setTokenInvitado(String tokenInvitado) { this.tokenInvitado = tokenInvitado; }
 
     public String getEnlace() { return enlace; }
     public void setEnlace(String enlace) { this.enlace = enlace; }

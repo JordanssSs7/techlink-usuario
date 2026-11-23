@@ -11,6 +11,7 @@ import com.techlink.repository.SesionRepository;
 import com.techlink.repository.SesionMentorBloqueoRepository;
 import com.techlink.model.Estudiante;
 import com.techlink.model.Mentor;
+import com.techlink.model.Usuario;
 import com.techlink.dto.SesionResponse;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,6 +34,13 @@ public class SesionService {
     private final SesionMentorBloqueoRepository bloqueoRepository;
     private final SesionNotificacionService notificacionService;
     private final ApplicationEventPublisher eventPublisher;
+    private String urlBase = "http://localhost:5173";
+
+    // Dirección pública de la aplicación, para armar el enlace a la sala de cada sesión.
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setUrlBase(@org.springframework.beans.factory.annotation.Value("${app.publico.url-base:http://localhost:5173}") String urlBase) {
+        this.urlBase = urlBase;
+    }
 
     // Inyección de dependencias por constructor
     public SesionService(
@@ -123,7 +131,7 @@ public class SesionService {
                 sesion.getMentor().getId()
         );
         respuesta.setDisponibilidadId(
-                sesion.getDisponibilidad().getId()
+                sesion.getDisponibilidad() == null ? null : sesion.getDisponibilidad().getId()
         );
 
         respuesta.setFecha(sesion.getFecha());
@@ -156,12 +164,6 @@ public class SesionService {
                 disponibilidadId == null) {
             throw new IllegalArgumentException(
                     "El usuario, mentor y disponibilidad son obligatorios."
-            );
-        }
-
-        if (enlaceReunion == null || enlaceReunion.isBlank()) {
-            throw new IllegalArgumentException(
-                    "El enlace de reunión es obligatorio."
             );
         }
 
@@ -211,30 +213,22 @@ public class SesionService {
         sesion.setFecha(fecha);
         sesion.setHoraInicio(horaInicio);
         sesion.setHoraFin(horaFin);
-        sesion.setEstado(Sesion.EstadoSesion.CONFIRMADA);
-        sesion.setEnlaceReunion(enlaceReunion.trim());
+        // El estudiante pide la sesión: queda PENDIENTE hasta que el mentor la acepte.
+        sesion.setEstado(Sesion.EstadoSesion.PENDIENTE);
+        // El enlace apunta a la sala de TechLink; se completa al conocer el id de la sesión.
+        sesion.setEnlaceReunion(EnlaceSala.paraSesion(urlBase, 0));
 
         // 8. Guardar la sesión en MariaDB
 
         Sesion sesionGuardada = sesionRepository.save(sesion);
+        sesionGuardada.setEnlaceReunion(EnlaceSala.paraSesion(urlBase, sesionGuardada.getId()));
 
-        String correoEstudiante = estudiante.getUsuario()
-                .getCorreoInstitucional();
-
-        String correoMentor = mentor.getUsuario()
-                .getCorreoInstitucional();
-
-        SesionConfirmadaEvent evento = new SesionConfirmadaEvent(
-                sesionGuardada.getId(),
-                correoEstudiante,
-                correoMentor,
-                sesionGuardada.getFecha(),
-                sesionGuardada.getHoraInicio(),
-                sesionGuardada.getHoraFin(),
-                sesionGuardada.getEnlaceReunion()
-        );
-
-        eventPublisher.publishEvent(evento);
+        Usuario usuarioEstudiante = estudiante.getUsuario();
+        String apellidos = usuarioEstudiante.getApellidos() == null || "-".equals(usuarioEstudiante.getApellidos())
+                ? "" : " " + usuarioEstudiante.getApellidos();
+        eventPublisher.publishEvent(new SesionSolicitadaEvent(sesionGuardada.getId(), mentor.getUsuario().getId(),
+                usuarioEstudiante.getNombres() + apellidos, sesionGuardada.getFecha(), sesionGuardada.getHoraInicio(),
+                sesionGuardada.getHoraFin()));
 
         return sesionGuardada;
     }

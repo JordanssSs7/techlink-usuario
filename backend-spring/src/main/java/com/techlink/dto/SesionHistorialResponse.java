@@ -23,6 +23,7 @@ public record SesionHistorialResponse(
         boolean puedeCalificar,
         boolean puedeModificar,
         boolean puedeEditarNota,
-        int recursos
+        int recursos,
+        boolean tieneGrabacion
 ) {
 }

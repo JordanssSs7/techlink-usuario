@@ -23,8 +23,9 @@ public class Sesion {
     @JoinColumn(name = "id_mentor", nullable = false)
     private Mentor mentor;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_disponibilidad", nullable = false)
+    // Null en las sesiones de seguimiento que agenda el mentor fuera de su horario semanal.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_disponibilidad")
     private MentorDisponibilidad disponibilidad;
 
     // HU-20: curso que el estudiante quiere reforzar en esta sesión (opcional).
@@ -52,6 +53,7 @@ public class Sesion {
     private LocalDateTime fechaCreacion;
 
     public enum EstadoSesion {
+        PENDIENTE,
         CONFIRMADA,
         CANCELADA
     }

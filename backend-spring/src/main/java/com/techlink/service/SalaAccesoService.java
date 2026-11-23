@@ -26,6 +26,9 @@ import java.util.Locale;
 @Service
 public class SalaAccesoService {
 
+    // Quien da la charla: entra con el enlace secreto, sin cuenta. Su id en la sala es el de la charla en negativo.
+    public static final String ROL_INVITADO = "INVITADO";
+
     public enum Tipo {
         SESION,
         CHARLA;
@@ -107,7 +110,32 @@ public class SalaAccesoService {
     // desactivó). No revisa el horario: eso lo dice Sala.abiertaEn().
     @Transactional(readOnly = true)
     public Sala autorizar(Integer usuarioId, Tipo tipo, Integer id) {
+        if (usuarioId != null && usuarioId < 0) {
+            return invitado(usuarioId, tipo, id);
+        }
         return tipo == Tipo.SESION ? sesion(usuarioId, id) : charla(usuarioId, id);
+    }
+
+    // La sala de la charla del invitado que trae ese enlace secreto. 404 si el enlace no corresponde a ninguna charla.
+    @Transactional(readOnly = true)
+    public Sala autorizarInvitado(String token) {
+        Charla c = token == null || token.isBlank() ? null : charlaRepository.findByTokenInvitado(token.trim()).orElse(null);
+        if (c == null) {
+            throw new ReglaNegocioException(HttpStatus.NOT_FOUND, "Este enlace de invitado no es válido.");
+        }
+        return invitado(-c.getId(), Tipo.CHARLA, c.getId());
+    }
+
+    private Sala invitado(Integer usuarioId, Tipo tipo, Integer id) {
+        if (tipo != Tipo.CHARLA || !id.equals(-usuarioId)) {
+            throw new ReglaNegocioException(HttpStatus.FORBIDDEN, "No participas en esta sala.");
+        }
+        Charla c = charlaRepository.findById(id)
+                .orElseThrow(() -> new ReglaNegocioException(HttpStatus.NOT_FOUND, "La charla no existe."));
+        if (!c.isActivo()) {
+            throw new ReglaNegocioException(HttpStatus.CONFLICT, "La charla fue desactivada.");
+        }
+        return salaDe(c);
     }
 
     private Sala sesion(Integer usuarioId, Integer id) {
@@ -142,6 +170,11 @@ public class SalaAccesoService {
         if (!c.isActivo()) {
             throw new ReglaNegocioException(HttpStatus.CONFLICT, "La charla fue desactivada.");
         }
+        return salaDe(c);
+    }
+
+    private Sala salaDe(Charla c) {
+        Integer id = c.getId();
         LocalDateTime inicio = LocalDateTime.of(c.getFecha(), c.getHoraInicio());
         LocalDateTime fin = LocalDateTime.of(c.getFecha(), c.getHoraFin());
         return new Sala(Tipo.CHARLA, id, c.getNombre(), inicio.minusMinutes(minutosAntes), fin.plusMinutes(minutosDespues),

@@ -50,6 +50,33 @@ public class PerfilController {
         return ResponseEntity.ok(perfilService.guardarFoto(idDe(jwt), foto));
     }
 
+    // Quita la foto de perfil (se vuelven a ver las iniciales).
+    @org.springframework.web.bind.annotation.DeleteMapping("/perfil/foto")
+    public ResponseEntity<PerfilResponse> quitarFoto(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(perfilService.quitarFoto(idDe(jwt)));
+    }
+
+    // Foto de portada (como la de Facebook): JPG o PNG de hasta 4 MB (multipart, campo "portada").
+    @PostMapping("/perfil/portada")
+    public ResponseEntity<PerfilResponse> subirPortada(@AuthenticationPrincipal Jwt jwt, @RequestParam("portada") MultipartFile portada) {
+        return ResponseEntity.ok(perfilService.guardarPortada(idDe(jwt), portada));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/perfil/portada")
+    public ResponseEntity<PerfilResponse> quitarPortada(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(perfilService.quitarPortada(idDe(jwt)));
+    }
+
+    @GetMapping("/usuarios/{id}/portada")
+    public ResponseEntity<byte[]> portada(@PathVariable Integer id) {
+        return perfilService.portada(id)
+                .map(p -> ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(p.getTipoContenido()))
+                        .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePrivate())
+                        .body(p.getContenido()))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     // La foto de cualquier usuario (se ve en perfiles públicos y rankings). Cualquier usuario con sesión puede pedirla.
     @GetMapping("/usuarios/{id}/foto")
     public ResponseEntity<byte[]> foto(@PathVariable Integer id) {

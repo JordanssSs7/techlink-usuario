@@ -29,13 +29,32 @@ public class NotificacionService {
         this.preferencias = preferencias;
     }
 
+    private EventosService eventos;
+
+    // Tiempo real: opcional, para que las pruebas que arman el servicio a mano no lo necesiten.
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setEventos(EventosService eventos) {
+        this.eventos = eventos;
+    }
+
     // Guarda un aviso para el usuario. Devuelve false si él lo tiene desactivado.
     @Transactional
     public boolean crear(Integer usuarioId, Tipo tipo, String titulo, String mensaje) {
+        return crear(usuarioId, tipo, titulo, mensaje, null);
+    }
+
+    // Igual, pero con un enlace: al hacer clic en el aviso se abre eso (por ejemplo "foro:12").
+    @Transactional
+    public boolean crear(Integer usuarioId, Tipo tipo, String titulo, String mensaje, String enlace) {
         if (!preferencias.permite(usuarioId, tipo, PreferenciaNotificacionService.Canal.EN_APP)) {
             return false;
         }
-        repositorio.save(new Notificacion(usuarioId, tipo, recortar(titulo, 150), recortar(mensaje, 500)));
+        Notificacion nueva = new Notificacion(usuarioId, tipo, recortar(titulo, 150), recortar(mensaje, 500));
+        nueva.setEnlace(enlace);
+        repositorio.save(nueva);
+        if (eventos != null) {
+            eventos.notificacion(usuarioId);
+        }
         return true;
     }
 
@@ -73,7 +92,7 @@ public class NotificacionService {
 
     static NotificacionResponse aRespuesta(Notificacion n) {
         return new NotificacionResponse(n.getId(), n.getTipo().name(), n.getTitulo(), n.getMensaje(), n.isLeida(),
-                n.getFechaCreacion());
+                n.getFechaCreacion(), n.getEnlace());
     }
 
     private static String recortar(String texto, int maximo) {

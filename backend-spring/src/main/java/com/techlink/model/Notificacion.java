@@ -22,7 +22,9 @@ public class Notificacion {
         SESION,
         RECORDATORIO,
         ANUNCIO,
-        CHARLA
+        CHARLA,
+        FORO,
+        AMISTAD
     }
 
     @Id
@@ -45,6 +47,10 @@ public class Notificacion {
 
     @Column(nullable = false)
     private boolean leida;
+
+    // A dónde lleva al hacer clic, por ejemplo "foro:12" (null si no lleva a ningún lado).
+    @Column(length = 60)
+    private String enlace;
 
     @Column(name = "fecha_creacion", nullable = false, insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;
@@ -73,6 +79,9 @@ public class Notificacion {
 
     public String getMensaje() { return mensaje; }
     public void setMensaje(String mensaje) { this.mensaje = mensaje; }
+
+    public String getEnlace() { return enlace; }
+    public void setEnlace(String enlace) { this.enlace = enlace; }
 
     public boolean isLeida() { return leida; }
     public void setLeida(boolean leida) { this.leida = leida; }

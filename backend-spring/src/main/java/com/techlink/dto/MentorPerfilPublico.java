@@ -23,7 +23,8 @@ public record MentorPerfilPublico(
         Integer sesionesCompletadas,
         List<InsigniaResponse> insignias,
         List<Comentario> comentarios,
-        boolean tieneFoto
+        boolean tieneFoto,
+        String frase
 ) {
 
     // Un comentario reciente. Del estudiante solo se muestra el primer nombre.

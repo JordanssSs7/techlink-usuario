@@ -33,7 +33,9 @@ public class CharlaController {
     @GetMapping("/recomendadas")
     public ResponseEntity<CharlasRecomendadasResponse> recomendadas(@AuthenticationPrincipal Jwt jwt) {
         soloEstudiante(jwt);
-        return ResponseEntity.ok(charlaService.recomendadas(Integer.valueOf(jwt.getSubject())));
+        Integer usuarioId = Integer.valueOf(jwt.getSubject());
+        return ResponseEntity.ok("MENTOR".equals(jwt.getClaimAsString("rol")) ? charlaService.vigentesParaMentor(usuarioId)
+                : charlaService.recomendadas(usuarioId));
     }
 
     // HU-25: "Mis charlas".
@@ -59,8 +61,9 @@ public class CharlaController {
     }
 
     private static void soloEstudiante(Jwt jwt) {
-        if (!"ESTUDIANTE".equals(jwt.getClaimAsString("rol"))) {
-            throw new ReglaNegocioException(HttpStatus.FORBIDDEN, "Solo los estudiantes pueden ver e inscribirse a charlas.");
+        String rol = jwt.getClaimAsString("rol");
+        if (!"ESTUDIANTE".equals(rol) && !"MENTOR".equals(rol)) {
+            throw new ReglaNegocioException(HttpStatus.FORBIDDEN, "Solo los estudiantes y mentores pueden ver e inscribirse a charlas.");
         }
     }
 }

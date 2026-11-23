@@ -414,6 +414,43 @@ class ForoServiceTest {
     }
 
     @Test
+    void alResponderSeAvisaAlAutorDeLaConsultaPeroNoAUnoMismo() {
+        NotificacionService notificaciones = Mockito.mock(NotificacionService.class);
+        servicio.setNotificaciones(notificaciones);
+        when(respuestaRepository.save(any(Respuesta.class))).thenAnswer(i -> {
+            Respuesta r = i.getArgument(0);
+            r.setId(50);
+            respuestas.add(r);
+            return r;
+        });
+
+        servicio.responder(OTRO, 10, new NuevaRespuesta("Un INNER JOIN trae solo las coincidencias."));
+        servicio.responder(AUTOR, 10, new NuevaRespuesta("Gracias, ahora lo entiendo mejor."));
+
+        verify(notificaciones).crear(Mockito.eq(AUTOR), Mockito.eq(com.techlink.model.Notificacion.Tipo.FORO),
+                Mockito.eq("Respondieron tu consulta"), Mockito.contains("Lucía"), Mockito.eq("foro:10"));
+        verify(notificaciones, Mockito.times(1)).crear(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void alContestarUnComentarioSeAvisaTambienASuAutor() {
+        NotificacionService notificaciones = Mockito.mock(NotificacionService.class);
+        servicio.setNotificaciones(notificaciones);
+        Respuesta original = respuesta(1, OTRO, "Un INNER JOIN solo trae las filas que coinciden.");
+        when(respuestaRepository.findById(1)).thenReturn(Optional.of(original));
+        when(respuestaRepository.save(any(Respuesta.class))).thenAnswer(i -> {
+            Respuesta r = i.getArgument(0);
+            r.setId(2);
+            return r;
+        });
+
+        servicio.responder(AUTOR, 10, new NuevaRespuesta("¿Y el LEFT JOIN qué trae entonces?", 1));
+
+        verify(notificaciones).crear(Mockito.eq(OTRO), Mockito.eq(com.techlink.model.Notificacion.Tipo.FORO),
+                Mockito.eq("Respondieron tu comentario"), any(), any());
+    }
+
+    @Test
     void laRespuestaDebeTenerContenido() {
         assertTrue(invalido(() -> servicio.responder(OTRO, 10, new NuevaRespuesta("corta"))).getCampos().containsKey("contenido"));
         assertTrue(invalido(() -> servicio.responder(OTRO, 10, new NuevaRespuesta(null))).getCampos().containsKey("contenido"));

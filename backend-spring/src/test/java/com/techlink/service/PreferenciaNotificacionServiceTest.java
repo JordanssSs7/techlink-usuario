@@ -63,7 +63,7 @@ class PreferenciaNotificacionServiceTest {
     void sinPreferenciasGuardadasTodoEstaActivado() {
         List<PreferenciaResponse> lista = servicio.listar(USUARIO);
 
-        assertEquals(4, lista.size());
+        assertEquals(6, lista.size());
         assertTrue(de(lista, "SESION").enApp());
         assertTrue(de(lista, "SESION").correo());
         assertTrue(de(lista, "RECORDATORIO").correo());

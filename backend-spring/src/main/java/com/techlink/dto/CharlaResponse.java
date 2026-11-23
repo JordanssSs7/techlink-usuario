@@ -19,6 +19,7 @@ public record CharlaResponse(
         String razon,
         boolean inscrito,
         boolean vigente,
-        boolean activa
+        boolean activa,
+        String imagen
 ) {
 }

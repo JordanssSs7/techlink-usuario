@@ -14,6 +14,10 @@ public record PerfilResponse(
         Integer ciclo,
         List<String> intereses,
         boolean tieneFoto,
-        LocalDateTime fotoActualizada
+        LocalDateTime fotoActualizada,
+        String frase,
+        boolean tienePortada,
+        LocalDateTime portadaActualizada,
+        String apodo
 ) {
 }

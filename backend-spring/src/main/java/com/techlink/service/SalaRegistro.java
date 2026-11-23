@@ -22,7 +22,16 @@ public class SalaRegistro {
     }
 
     // Estado de cámara, micrófono y pantalla compartida, para que los demás lo muestren (por ejemplo "cámara apagada").
-    public record Estado(boolean camara, boolean microfono, boolean pantalla, String pantallaStream) {
+    public record Estado(boolean camara, boolean microfono, boolean pantalla, String pantallaStream, boolean grabando, boolean pausada,
+                         boolean mano) {
+
+        public Estado(boolean camara, boolean microfono, boolean pantalla, String pantallaStream, boolean grabando, boolean pausada) {
+            this(camara, microfono, pantalla, pantallaStream, grabando, pausada, false);
+        }
+
+        public Estado(boolean camara, boolean microfono, boolean pantalla, String pantallaStream) {
+            this(camara, microfono, pantalla, pantallaStream, false, false, false);
+        }
 
         public static final Estado INICIAL = new Estado(false, false, false, null);
     }
@@ -63,6 +72,10 @@ public class SalaRegistro {
     }
 
     private final Map<String, Map<Integer, Participante>> salas = new ConcurrentHashMap<>();
+    public boolean invitadoPresente(String clave) {
+        return participantes(clave).stream().anyMatch(p -> "INVITADO".equals(p.rol()));
+    }
+
 
     // Mete a alguien a la sala. Si ya estaba conectado (otra pestaña), la conexión anterior se cierra y esta la reemplaza.
     // Si la sala ya tiene el máximo de personas distintas, responde Llena.

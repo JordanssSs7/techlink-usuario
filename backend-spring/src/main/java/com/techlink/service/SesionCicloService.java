@@ -83,7 +83,10 @@ public class SesionCicloService {
     @Transactional
     public Sesion cancelar(Integer usuarioId, Integer sesionId) {
         Sesion sesion = sesionDelEstudiante(usuarioId, sesionId);
-        validarModificable(sesion);
+        // Una solicitud que el mentor aún no responde se puede retirar en cualquier momento.
+        if (sesion.getEstado() != Sesion.EstadoSesion.PENDIENTE) {
+            validarModificable(sesion);
+        }
 
         sesion.setEstado(Sesion.EstadoSesion.CANCELADA);
         Sesion guardada = sesionRepository.save(sesion);

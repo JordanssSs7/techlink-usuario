@@ -41,6 +41,9 @@ public class SecurityConfig {
                         // HU-08: la conexion en tiempo real de la sala virtual no lleva token: entra con un ticket de un
                         // solo uso que se pide (con token) en /api/salas/{tipo}/{id}/ticket y se canjea al conectar.
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/api/charlas/invitado/**").permitAll()
+                        // Ver una grabación: el <video> no puede mandar el token, así que entra con un ticket temporal.
+                        .requestMatchers(HttpMethod.GET, "/api/grabaciones/ver/**").permitAll()
                         // HU-27: cualquiera puede comprobar una constancia con su codigo (el del QR), sin iniciar sesion.
                         .requestMatchers(HttpMethod.GET, "/api/verificar/**").permitAll()
                         // HU-02 - Por rol: cada panel solo para su rol (las rutas se iran creando en las siguientes HU).

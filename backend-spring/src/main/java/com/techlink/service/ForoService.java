@@ -12,6 +12,7 @@ import com.techlink.exception.DatosInvalidosException;
 import com.techlink.exception.ReglaNegocioException;
 import com.techlink.model.Consulta;
 import com.techlink.model.Curso;
+import com.techlink.model.Notificacion;
 import com.techlink.model.Respuesta;
 import com.techlink.model.Usuario;
 import com.techlink.repository.ConsultaRepository;
@@ -50,6 +51,13 @@ public class ForoService {
     private final UsuarioRepository usuarioRepository;
     private final LimitadorConsultas limitador;
     private final Clock reloj;
+    private NotificacionService notificaciones;
+
+    // Avisos a quien recibe una respuesta. Opcional para que las pruebas armen el servicio a mano.
+    @Autowired(required = false)
+    void setNotificaciones(NotificacionService notificaciones) {
+        this.notificaciones = notificaciones;
+    }
 
     @Autowired
     public ForoService(ConsultaRepository consultaRepository,
@@ -77,7 +85,12 @@ public class ForoService {
     @Transactional(readOnly = true)
     public List<ConsultaResumen> listar(Integer cursoId, String busqueda) {
         String texto = busqueda == null || busqueda.isBlank() ? null : "%" + busqueda.trim().toLowerCase(Locale.ROOT) + "%";
-        List<Consulta> consultas = consultaRepository.buscar(cursoId, texto, PageRequest.of(0, MAX_CONSULTAS));
+        return resumir(consultaRepository.buscar(cursoId, texto, PageRequest.of(0, MAX_CONSULTAS)));
+    }
+
+    // Las consultas como filas de la lista (con su número de respuestas y si ya están resueltas).
+    @Transactional(readOnly = true)
+    public List<ConsultaResumen> resumir(List<Consulta> consultas) {
         if (consultas.isEmpty()) {
             return List.of();
         }
@@ -149,7 +162,28 @@ public class ForoService {
         respuesta.setContenido(contenido);
         respuesta.setFechaCreacion(LocalDateTime.now(reloj));
         respuestaRepository.save(respuesta);
+        avisarRespuesta(usuarioId, consulta, padre, respuesta.getAutor());
         return aDetalle(usuarioId, consulta);
+    }
+
+    // Avisa al autor de la consulta (y a quien escribió la respuesta que se contestó) que alguien respondió.
+    private void avisarRespuesta(Integer quienResponde, Consulta consulta, Integer padreId, Usuario autorNuevo) {
+        if (notificaciones == null) {
+            return;
+        }
+        String quien = autor(autorNuevo).nombre();
+        String titulo = consulta.getTitulo().length() > 80 ? consulta.getTitulo().substring(0, 79) + "…" : consulta.getTitulo();
+        Integer autorConsulta = consulta.getAutor().getId();
+        if (!autorConsulta.equals(quienResponde)) {
+            notificaciones.crear(autorConsulta, Notificacion.Tipo.FORO, "Respondieron tu consulta",
+                    quien + " respondió tu consulta «" + titulo + "».", "foro:" + consulta.getId());
+        }
+        if (padreId != null) {
+            respuestaRepository.findById(padreId).map(Respuesta::getAutor).map(Usuario::getId)
+                    .filter(id -> !id.equals(quienResponde) && !id.equals(autorConsulta))
+                    .ifPresent(id -> notificaciones.crear(id, Notificacion.Tipo.FORO, "Respondieron tu comentario",
+                            quien + " te respondió en «" + titulo + "».", "foro:" + consulta.getId()));
+        }
     }
 
     // ---------- editar y eliminar lo propio ----------

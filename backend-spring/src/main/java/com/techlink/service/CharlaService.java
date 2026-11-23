@@ -39,6 +39,28 @@ public class CharlaService {
     private final EstudianteRepository estudianteRepository;
     private final NotificacionService notificaciones;
     private final Clock reloj;
+    private SalaRegistro salas; // para saber si el invitado sigue en la sala o ya terminó la charla
+
+    @Autowired(required = false)
+    public void setSalas(SalaRegistro salas) {
+        this.salas = salas;
+    }
+
+    private boolean enCurso(Charla c) {
+        return salas != null && salas.invitadoPresente("CHARLA-" + c.getId());
+    }
+
+    // Las charlas vigentes: las que aún no llegan a su hora de fin, más las que se pasaron de hora pero cuyo invitado sigue en la sala. Que el
+    // invitado salga antes (o termine) no las oculta: puede volver a entrar hasta la hora de fin.
+    private List<Charla> listadas(LocalDateTime ahora) {
+        List<Charla> lista = new ArrayList<>(charlaRepository.vigentes(ahora.toLocalDate(), ahora.toLocalTime()));
+        for (Charla c : charlaRepository.terminadasHoy(ahora.toLocalDate(), ahora.toLocalTime())) {
+            if (enCurso(c)) {
+                lista.add(c);
+            }
+        }
+        return lista;
+    }
 
     @Autowired
     public CharlaService(CharlaRepository charlaRepository,
@@ -75,7 +97,7 @@ public class CharlaService {
 
         List<CharlaResponse> recomendadas = new ArrayList<>();
         List<CharlaResponse> otras = new ArrayList<>();
-        for (Charla charla : charlaRepository.vigentes(ahora.toLocalDate(), ahora.toLocalTime())) {
+        for (Charla charla : listadas(ahora)) {
             String razon = razon(charla, idsCursos, intereses);
             CharlaResponse respuesta = aRespuesta(charla, razon, inscritas.contains(charla.getId()), ahora);
             (razon != null ? recomendadas : otras).add(respuesta);
@@ -84,10 +106,21 @@ public class CharlaService {
         return new CharlasRecomendadasResponse(recomendadas, otras, perfilCompleto);
     }
 
+    // Para el mentor: las mismas charlas vigentes, sin recomendaciones (no tiene intereses ni cursos críticos).
+    @Transactional(readOnly = true)
+    public CharlasRecomendadasResponse vigentesParaMentor(Integer usuarioId) {
+        Set<Integer> inscritas = new HashSet<>(inscripcionRepository.idsDeCharlas(usuarioId));
+        LocalDateTime ahora = LocalDateTime.now(reloj);
+        List<CharlaResponse> todas = new ArrayList<>();
+        for (Charla charla : listadas(ahora)) {
+            todas.add(aRespuesta(charla, null, inscritas.contains(charla.getId()), ahora));
+        }
+        return new CharlasRecomendadasResponse(new ArrayList<>(), todas, true);
+    }
+
     // HU-25: "Mis charlas": las próximas primero (de la más cercana a la más lejana) y luego las que ya pasaron.
     @Transactional(readOnly = true)
     public List<CharlaResponse> mias(Integer usuarioId) {
-        estudiante(usuarioId);
         LocalDateTime ahora = LocalDateTime.now(reloj);
         List<CharlaResponse> proximas = new ArrayList<>();
         List<CharlaResponse> pasadas = new ArrayList<>();
@@ -104,7 +137,6 @@ public class CharlaService {
     // HU-25: se inscribe a una charla vigente. 404 si no existe o está desactivada, 409 si ya terminó o ya está inscrito.
     @Transactional
     public CharlaResponse inscribir(Integer usuarioId, Integer charlaId) {
-        estudiante(usuarioId);
         LocalDateTime ahora = LocalDateTime.now(reloj);
         Charla charla = charlaRepository.findById(charlaId)
                 .filter(Charla::isActivo)
@@ -128,7 +160,6 @@ public class CharlaService {
     // Anula la inscripción. 404 si no estaba inscrito, 409 si la charla ya terminó.
     @Transactional
     public void cancelar(Integer usuarioId, Integer charlaId) {
-        estudiante(usuarioId);
         CharlaInscripcion inscripcion = inscripcionRepository.findByIdCharlaAndIdUsuario(charlaId, usuarioId)
                 .orElseThrow(() -> new ReglaNegocioException(HttpStatus.NOT_FOUND, "No estás inscrito en esta charla."));
         Charla charla = charlaRepository.findById(charlaId)
@@ -189,11 +220,12 @@ public class CharlaService {
         return Normalizer.normalize(texto, Normalizer.Form.NFD).replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT).trim();
     }
 
-    private static CharlaResponse aRespuesta(Charla c, String razon, boolean inscrito, LocalDateTime ahora) {
+    private CharlaResponse aRespuesta(Charla c, String razon, boolean inscrito, LocalDateTime ahora) {
+        boolean sigue = vigente(c, ahora) || (c.isActivo() && enCurso(c));
         LocalDate fecha = c.getFecha();
         LocalTime inicio = c.getHoraInicio();
         return new CharlaResponse(c.getId(), c.getNombre(), c.getTematica(), c.getDescripcion(),
                 c.getCurso() == null ? null : c.getCurso().getNombre(), fecha, inicio, c.getHoraFin(), c.getEnlace(),
-                razon, inscrito, vigente(c, ahora), c.isActivo());
+                razon, inscrito, sigue, c.isActivo(), c.getImagen());
     }
 }

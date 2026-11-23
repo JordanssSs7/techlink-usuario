@@ -139,6 +139,8 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
                 case "chat", "codigo" -> chat(sala, datos, canal, tipo, json);
                 case "senal" -> senal(sala, datos, json);
                 case "estado" -> estado(sala, datos, json);
+                case "palabra" -> palabra(sala, datos, json);
+                case "fin" -> fin(sala, datos);
                 default -> error(canal, "Tipo de mensaje desconocido.");
             }
         } catch (DatosInvalidosException e) {
@@ -152,6 +154,10 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void chat(SalaAccesoService.Sala sala, SalaTicketService.Datos datos, CanalWs canal, String tipo, JsonNode json) {
+        if (datos.usuarioId() < 0) { // el invitado no tiene cuenta y los mensajes se guardan con la de quien los escribe
+            error(canal, "El invitado habla por audio: el chat es de los asistentes.");
+            return;
+        }
         if (!sala.abiertaEn(acceso.ahora())) {
             error(canal, "La sala ya cerró.");
             canal.cerrar(CloseStatus.NORMAL.getCode(), "La sala ya cerró");
@@ -176,10 +182,33 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
         String stream = json.path("pantallaStream").asString("");
         SalaRegistro.Estado nuevo = new SalaRegistro.Estado(json.path("camara").asBoolean(false),
                 json.path("microfono").asBoolean(false), json.path("pantalla").asBoolean(false),
-                stream.isBlank() || stream.length() > 100 ? null : stream);
+                stream.isBlank() || stream.length() > 100 ? null : stream,
+                // Solo el mentor puede grabar: lo que diga otro no cuenta.
+                "MENTOR".equals(datos.rol()) && json.path("grabando").asBoolean(false),
+                "MENTOR".equals(datos.rol()) && json.path("pausada").asBoolean(false),
+                json.path("mano").asBoolean(false));
         registro.actualizarEstado(sala.clave(), datos.usuarioId(), nuevo);
         registro.difundir(sala.clave(), JSON.writeValueAsString(Map.of("t", "estado", "id", datos.usuarioId(),
                 "estado", descripcionEstado(nuevo))), datos.usuarioId());
+    }
+
+    // El invitado termina su charla: a todos los que seguían conectados les llega el aviso de que finalizó. La charla sigue en las listas y en la
+    // sala hasta su hora de fin: si el invitado salió por error, puede volver a entrar y continuar.
+    private void fin(SalaAccesoService.Sala sala, SalaTicketService.Datos datos) {
+        if (!SalaAccesoService.ROL_INVITADO.equals(datos.rol())) {
+            return;
+        }
+        registro.difundir(sala.clave(), JSON.writeValueAsString(Map.of("t", "fin")), datos.usuarioId());
+    }
+
+    // El invitado da la palabra a quien levantó la mano (o se la quita): el aviso llega solo a esa persona.
+    private void palabra(SalaAccesoService.Sala sala, SalaTicketService.Datos datos, JsonNode json) {
+        JsonNode para = json.path("para");
+        if (!SalaAccesoService.ROL_INVITADO.equals(datos.rol()) || !para.isInt()) {
+            return;
+        }
+        registro.enviarA(sala.clave(), para.asInt(), JSON.writeValueAsString(Map.of("t", "palabra",
+                "permitir", json.path("permitir").asBoolean(false))));
     }
 
     @Override
@@ -233,6 +262,9 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
         d.put("microfono", e.microfono());
         d.put("pantalla", e.pantalla());
         d.put("pantallaStream", e.pantallaStream());
+        d.put("grabando", e.grabando());
+        d.put("pausada", e.pausada());
+        d.put("mano", e.mano());
         return d;
     }
 

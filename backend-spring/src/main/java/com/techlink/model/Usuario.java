@@ -62,6 +62,19 @@ public class Usuario {
     @Column(length = 300)
     private String descripcion;
 
+    // Frase de estado del perfil ("¿Qué estás pensando?").
+    @Column(name = "apodo", length = 40)
+    private String apodo;
+
+    public String getApodo() { return apodo; }
+    public void setApodo(String apodo) { this.apodo = apodo; }
+
+    @Column(name = "frase", length = 80)
+    private String frase;
+
+    public String getFrase() { return frase; }
+    public void setFrase(String frase) { this.frase = frase; }
+
     @ElementCollection
     @CollectionTable(name = "usuario_intereses", joinColumns = @JoinColumn(name = "id_usuario"))
     @Column(name = "interes", nullable = false, length = 50)

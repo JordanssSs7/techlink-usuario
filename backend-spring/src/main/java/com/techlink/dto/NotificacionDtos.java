@@ -11,7 +11,7 @@ public final class NotificacionDtos {
 
     // tipo: SESION, RECORDATORIO o ANUNCIO.
     public record NotificacionResponse(Integer id, String tipo, String titulo, String mensaje, boolean leida,
-                                       LocalDateTime fecha) {
+                                       LocalDateTime fecha, String enlace) {
     }
 
     // noLeidas cuenta todas las pendientes, aunque la lista venga recortada.

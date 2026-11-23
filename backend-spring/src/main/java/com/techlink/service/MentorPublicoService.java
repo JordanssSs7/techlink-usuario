@@ -238,7 +238,7 @@ public class MentorPublicoService {
         return new MentorPerfilPublico(m.getId(), u.getId(), u.getNombres(), apellidos(u), m.getEspecialidad(),
                 u.getDescripcion(), m.getBiografia(), nombresDeCursos(m), m.getFortalezas().stream().sorted().toList(),
                 m.getAreas().stream().sorted().toList(), promedio, total, actividad.horas(), actividad.sesiones(),
-                insignias(m), comentarios, fotoRepository.existsById(u.getId()));
+                insignias(m), comentarios, fotoRepository.existsById(u.getId()), u.getFrase());
     }
 
     private MentorPerfilPublico.Comentario aComentario(Calificacion c) {

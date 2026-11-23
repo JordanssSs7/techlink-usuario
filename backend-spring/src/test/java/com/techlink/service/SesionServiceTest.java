@@ -129,13 +129,13 @@ class SesionServiceTest {
         Sesion sesion = agendar(fechaFutura, INICIO, FIN);
 
         assertNotNull(sesion);
-        assertEquals(Sesion.EstadoSesion.CONFIRMADA, sesion.getEstado());
+        assertEquals(Sesion.EstadoSesion.PENDIENTE, sesion.getEstado());
         assertEquals(fechaFutura, sesion.getFecha());
         assertEquals(INICIO, sesion.getHoraInicio());
         assertEquals(FIN, sesion.getHoraFin());
 
         verify(sesionRepository).save(any(Sesion.class));
-        verify(eventPublisher).publishEvent(any(SesionConfirmadaEvent.class));
+        verify(eventPublisher).publishEvent(any(SesionSolicitadaEvent.class));
     }
 
     @Test

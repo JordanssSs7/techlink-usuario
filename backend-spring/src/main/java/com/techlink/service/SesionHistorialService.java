@@ -32,12 +32,20 @@ public class SesionHistorialService {
     public static final String PROGRAMADA = "PROGRAMADA";
     public static final String COMPLETADA = "COMPLETADA";
     public static final String CANCELADA = "CANCELADA";
+    public static final String PENDIENTE = "PENDIENTE";
 
     private final SesionRepository sesionRepository;
     private final CalificacionRepository calificacionRepository;
     private final SesionNotaRepository notaRepository;
     private final RecursoRepository recursoRepository;
     private final Clock reloj;
+    private GrabacionService grabaciones;
+
+    // Para saber qué sesiones tienen grabación. Opcional para que las pruebas armen el servicio a mano.
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setGrabaciones(GrabacionService grabaciones) {
+        this.grabaciones = grabaciones;
+    }
 
     @Autowired
     public SesionHistorialService(SesionRepository sesionRepository,
@@ -64,9 +72,9 @@ public class SesionHistorialService {
     @Transactional(readOnly = true)
     public List<SesionHistorialResponse> listar(Integer usuarioId, String rol, String estado) {
         String filtro = estado == null || estado.isBlank() ? null : estado.trim().toUpperCase(Locale.ROOT);
-        if (filtro != null && !List.of(PROGRAMADA, COMPLETADA, CANCELADA).contains(filtro)) {
+        if (filtro != null && !List.of(PROGRAMADA, COMPLETADA, CANCELADA, PENDIENTE).contains(filtro)) {
             throw new SesionException(HttpStatus.BAD_REQUEST,
-                    "El estado debe ser PROGRAMADA, COMPLETADA o CANCELADA.");
+                    "El estado debe ser PENDIENTE, PROGRAMADA, COMPLETADA o CANCELADA.");
         }
 
         boolean esMentor = "MENTOR".equals(rol);
@@ -88,11 +96,12 @@ public class SesionHistorialService {
             recursos.put((Integer) fila[0], ((Number) fila[1]).intValue());
         }
 
+        java.util.Set<Integer> conGrabacion = grabaciones == null ? java.util.Set.of() : grabaciones.conGrabacion(ids);
         LocalDateTime ahora = LocalDateTime.now(reloj);
         return sesiones.stream()
                 .filter(s -> filtro == null || filtro.equals(estadoVisible(s, ahora)))
                 .map(s -> convertir(s, esMentor, ahora, calificaciones.get(s.getId()), notas.get(s.getId()),
-                        recursos.getOrDefault(s.getId(), 0)))
+                        recursos.getOrDefault(s.getId(), 0), conGrabacion.contains(s.getId())))
                 .toList();
     }
 
@@ -100,11 +109,14 @@ public class SesionHistorialService {
         if (sesion.getEstado() == Sesion.EstadoSesion.CANCELADA) {
             return CANCELADA;
         }
+        if (sesion.getEstado() == Sesion.EstadoSesion.PENDIENTE) {
+            return PENDIENTE;
+        }
         return LocalDateTime.of(sesion.getFecha(), sesion.getHoraFin()).isAfter(ahora) ? PROGRAMADA : COMPLETADA;
     }
 
     private SesionHistorialResponse convertir(Sesion s, boolean esMentor, LocalDateTime ahora,
-                                              Calificacion calificacion, SesionNota nota, int recursos) {
+                                              Calificacion calificacion, SesionNota nota, int recursos, boolean tieneGrabacion) {
         String estado = estadoVisible(s, ahora);
         boolean completada = COMPLETADA.equals(estado);
         boolean programada = PROGRAMADA.equals(estado);
@@ -119,7 +131,7 @@ public class SesionHistorialService {
         // Calificar: solo el estudiante, cuando la sesión terminó y aún no la calificó.
         boolean puedeCalificar = !esMentor && completada && calificacion == null;
         // Notas: solo el mentor, desde que empieza la sesión hasta 24 horas después de que termina.
-        boolean puedeEditarNota = esMentor && !CANCELADA.equals(estado)
+        boolean puedeEditarNota = esMentor && !CANCELADA.equals(estado) && !PENDIENTE.equals(estado)
                 && !ahora.isBefore(LocalDateTime.of(s.getFecha(), s.getHoraInicio()))
                 && SesionNotaService.puedeEditar(s, ahora);
 
@@ -128,10 +140,10 @@ public class SesionHistorialService {
                 s.getMentor().getId(),
                 s.getCurso() == null ? null : s.getCurso().getNombre(),
                 contraparte,
-                CANCELADA.equals(estado) ? null : s.getEnlaceReunion(),
+                CANCELADA.equals(estado) || PENDIENTE.equals(estado) ? null : s.getEnlaceReunion(),
                 calificacion == null ? null : calificacion.getEstrellas(),
                 calificacion == null ? null : calificacion.getComentario(),
                 nota == null ? null : nota.getContenido(),
-                puedeCalificar, puedeModificar, puedeEditarNota, recursos);
+                puedeCalificar, puedeModificar, puedeEditarNota, recursos, tieneGrabacion);
     }
 }
