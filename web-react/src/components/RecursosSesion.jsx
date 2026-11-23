@@ -8,6 +8,54 @@ const ICONOS = { ARCHIVO: '📄', ENLACE: '🔗', CODIGO: '💻' };
 
 const tamano = (b) => (b >= 1024 * 1024 ? `${(b / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
+// Una parte de lo compartido: la imagen, o la primera página del PDF. El archivo se pide con la sesión iniciada (no se puede poner en un <img>
+// directamente) y se muestra desde una dirección temporal del navegador.
+function VistaPrevia({ recurso }) {
+  const { authFetch } = useAuth();
+  const [url, setUrl] = useState(null);
+  const [abierta, setAbierta] = useState(false); // la vista previa empieza chica y se abre con «Ver más»
+  const tipo = recurso.tipoContenido || '';
+  const esImagen = tipo.startsWith('image/');
+  const esPdf = tipo === 'application/pdf';
+
+  useEffect(() => {
+    if (!esImagen && !esPdf) return undefined;
+    let activo = true;
+    let direccion = null;
+    (async () => {
+      try {
+        const response = await authFetch(`/api/recursos/${recurso.id}/archivo`);
+        if (!response.ok || !activo) return;
+        direccion = URL.createObjectURL(await response.blob());
+        if (activo) setUrl(direccion);
+        else URL.revokeObjectURL(direccion);
+      } catch { /* sin vista previa: queda el botón de descargar */ }
+    })();
+    return () => {
+      activo = false;
+      if (direccion) URL.revokeObjectURL(direccion);
+    };
+  }, [authFetch, recurso.id, esImagen, esPdf]);
+
+  if (!esImagen && !esPdf) return null;
+  if (!url) return <div className="co-vista cargando" aria-hidden="true" />;
+  return (
+    <div className={`co-vista${abierta ? ' abierta' : ''}`}>
+      <div className="co-vista-marco">
+        {esImagen
+          ? <img src={url} alt={`Vista previa de ${recurso.titulo}`} loading="lazy" />
+          : <iframe src={`${url}#page=1&view=FitH&toolbar=0&navpanes=0`} title={`Primera página de ${recurso.titulo}`} tabIndex={-1} />}
+      </div>
+      <div className="co-vista-barra">
+        <button type="button" className="co-vista-mas" aria-expanded={abierta} onClick={() => setAbierta((v) => !v)}>
+          {abierta ? 'Ver menos' : 'Ver más'}
+        </button>
+        <a className="co-vista-abrir" href={url} target="_blank" rel="noopener noreferrer">{esImagen ? 'Abrir imagen' : 'Abrir PDF'}</a>
+      </div>
+    </div>
+  );
+}
+
 // HU-18: los recursos que el mentor comparte en una sesión (archivo PDF o imagen de hasta 10 MB, enlace o código).
 // El estudiante los ve y los descarga; el mentor además los agrega y los quita.
 export default function RecursosSesion({ sesion, esMentor, onCambio }) {
@@ -107,6 +155,7 @@ export default function RecursosSesion({ sesion, esMentor, onCambio }) {
               </p>
             )}
             {r.descripcion && <p className="co-texto">{r.descripcion}</p>}
+            {r.tipo === 'ARCHIVO' && !r.oculto && <VistaPrevia recurso={r} />}
 
             {r.tipo === 'CODIGO' && (
               <div className="co-codigo">
@@ -176,8 +225,20 @@ function FormRecurso({ sesionId, onListo, onCancelar }) {
 
   async function enviar(e) {
     e.preventDefault();
-    setEnviando(true);
     setErrores({});
+    // Al compartir un archivo sin escribir título, se usa el nombre del archivo.
+    let tituloFinal = titulo.trim();
+    if (tipo === 'ARCHIVO' && !tituloFinal && archivo) {
+      tituloFinal = archivo.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim().slice(0, 150);
+      if (tituloFinal.length < 3) tituloFinal = 'Archivo compartido';
+      setTitulo(tituloFinal);
+    }
+    if (tituloFinal.length < 3) {
+      setErrores({ titulo: 'Escribe un título de al menos 3 letras.' });
+      document.getElementById('rc-titulo')?.focus();
+      return;
+    }
+    setEnviando(true);
     try {
       let response;
       if (tipo === 'ARCHIVO') {
@@ -187,16 +248,16 @@ function FormRecurso({ sesionId, onListo, onCancelar }) {
         }
         const formulario = new FormData();
         formulario.append('archivo', archivo);
-        formulario.append('titulo', titulo);
+        formulario.append('titulo', tituloFinal);
         if (descripcion.trim()) formulario.append('descripcion', descripcion);
         response = await authFetch(`/api/sesiones/${sesionId}/recursos/archivo`, { method: 'POST', body: formulario });
       } else if (tipo === 'ENLACE') {
         response = await authFetch(`/api/sesiones/${sesionId}/recursos/enlace`, {
-          method: 'POST', body: JSON.stringify({ titulo, descripcion, url })
+          method: 'POST', body: JSON.stringify({ titulo: tituloFinal, descripcion, url })
         });
       } else {
         response = await authFetch(`/api/sesiones/${sesionId}/recursos/codigo`, {
-          method: 'POST', body: JSON.stringify({ titulo, descripcion, lenguaje, codigo })
+          method: 'POST', body: JSON.stringify({ titulo: tituloFinal, descripcion, lenguaje, codigo })
         });
       }
       const data = await response.json().catch(() => ({}));
@@ -222,7 +283,7 @@ function FormRecurso({ sesionId, onListo, onCancelar }) {
       </div>
       {errores.general && <p className="co-error" role="alert">{errores.general}</p>}
 
-      <label htmlFor="rc-titulo">Título</label>
+      <label htmlFor="rc-titulo">Título{tipo === 'ARCHIVO' ? ' (si lo dejas vacío, se usa el nombre del archivo)' : ''}</label>
       <input id="rc-titulo" type="text" maxLength={150} value={titulo} aria-invalid={Boolean(errores.titulo)}
         placeholder="Ej: Guía de repaso de JOIN" onChange={(e) => setTitulo(e.target.value)} />
       {errores.titulo && <p className="co-campo-error" role="alert">{errores.titulo}</p>}

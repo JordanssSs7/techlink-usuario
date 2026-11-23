@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../auth/authContext';
 
-const CADA_MS = 60000;
+// Tiempo real: el servidor avisa al instante; el sondeo lento queda de respaldo (por ejemplo, para anuncios que crea el panel de administración).
+const CADA_MS = 45000;
+const EVENTO_NOTIFICACION = 'techlink:notificacion';
 
 // HU-22: cantidad de notificaciones sin leer, para el indicador del menú. Se consulta al entrar y luego cada minuto;
 // "refrescar" la vuelve a pedir y "poner" la fija (por ejemplo, al marcar todo como leído).
@@ -34,7 +36,8 @@ export default function useNotificacionesPendientes() {
     };
     consultar();
     const temporizador = setInterval(consultar, CADA_MS);
-    return () => { activo = false; clearInterval(temporizador); };
+    window.addEventListener(EVENTO_NOTIFICACION, consultar);
+    return () => { activo = false; clearInterval(temporizador); window.removeEventListener(EVENTO_NOTIFICACION, consultar); };
   }, [authFetch]);
 
   return { pendientes, refrescar, poner: setPendientes };

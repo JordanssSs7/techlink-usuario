@@ -4,8 +4,12 @@ import './PortalMentor.css';
 import { useAuth } from '../auth/authContext';
 import PerfilMentor from './PerfilMentor';
 import MisSesiones from './MisSesiones';
+import AgendarSeguimiento from './AgendarSeguimiento';
 import MiCuenta from './MiCuenta';
 import Foro from './Foro';
+import Charlas from './Charlas';
+import { tomarSalaPendiente } from '../enlaceSala';
+import PerfilDesdeAviso from './PerfilDesdeAviso';
 import Calendario from './Calendario';
 import MetasMentor from './MetasMentor';
 import CentroAyuda from './CentroAyuda';
@@ -23,6 +27,7 @@ const trazo = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLi
 const SECCIONES = [
   { id: 'inicio', titulo: 'Inicio', icono: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V20h5v-6h4v6h5V9.5" /></> },
   { id: 'sesiones', titulo: 'Mis sesiones', icono: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17" /></> },
+  { id: 'charlas', titulo: 'Charlas', icono: <><rect x="3" y="5" width="13" height="14" rx="2" /><path d="m16 10 5-3v10l-5-3" /></> },
   { id: 'calendario', titulo: 'Calendario', icono: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17M8 14h2M12 14h2M16 14h.01M8 17h2" /></> },
   { id: 'metas', titulo: 'Metas', icono: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="0.8" /></> },
   { id: 'estadisticas', titulo: 'Estadísticas', icono: <><path d="M5 20V10M12 20V4M19 20v-7" /></> },
@@ -36,6 +41,7 @@ const SECCIONES = [
 // Título, texto de apoyo y encabezado de cada sección (las que no son el inicio).
 const ENCABEZADOS = {
   sesiones: ['Mentorías', 'Mis sesiones', 'Revisa tus sesiones con los estudiantes, entra a la sala virtual y deja notas con los acuerdos y tareas pendientes.'],
+  charlas: ['Comunidad', 'Charlas virtuales', 'Charlas que da el equipo de TechLink con invitados. Inscríbete para entrar a la sala y levanta la mano si quieres preguntar.'],
   calendario: ['Tu agenda', 'Calendario', 'Tus sesiones con los estudiantes, por semana o por día. Elige una para ver su detalle.'],
   metas: ['Seguimiento', 'Metas de mis estudiantes', 'Acuerda metas semanales con tus estudiantes y mira cuáles van cumpliendo entre una sesión y otra.'],
   estadisticas: ['Tu desempeño', 'Estadísticas', 'Tus sesiones, horas y calificación mes a mes, y tu constancia de mentoría en PDF.'],
@@ -60,7 +66,23 @@ function Logo({ size = 26 }) {
 export default function PortalMentor() {
   const { usuario, logout } = useAuth();
   const fotoPropia = useFotoPropia();
-  const [seccion, setSeccion] = useState('inicio');
+  const [salaPendiente] = useState(() => tomarSalaPendiente()); // sala que abrió un enlace de sesión o de charla
+  const salaInicial = salaPendiente?.tipo === 'sesion' ? salaPendiente.id : null;
+  const charlaInicial = salaPendiente?.tipo === 'charla' ? salaPendiente.id : null;
+  const [seccion, setSeccion] = useState(salaInicial ? 'sesiones' : charlaInicial ? 'charlas' : 'inicio');
+  const [versionSesiones, setVersionSesiones] = useState(0); // sube al agendar para que la lista se vuelva a pedir
+  const [irConsulta, setIrConsulta] = useState(null); // consulta del foro que abrió un aviso
+
+  // Un aviso (por ejemplo, «reaccionaron a tu respuesta») lleva directo a su consulta del foro.
+  useEffect(() => {
+    const ir = (e) => {
+      setSeccion(e.detail.seccion);
+      setIrConsulta(e.detail.consultaId ?? null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('techlink:ir', ir);
+    return () => window.removeEventListener('techlink:ir', ir);
+  }, []);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const { pendientes, poner: ponerPendientes } = useNotificacionesPendientes();
 
@@ -131,7 +153,7 @@ export default function PortalMentor() {
         <div className="pt-usuario">
           <div className="pt-usuario-fila">
             <Avatar className="pt-avatar" idUsuario={fotoPropia.idUsuario} tieneFoto={fotoPropia.tieneFoto}
-              version={fotoPropia.version} iniciales={iniciales} tamano={40} />
+              version={fotoPropia.version} iniciales={iniciales} tamano={40} insignia />
             <div className="pt-usuario-txt">
               <p className="pt-usuario-nombre">{nombreCompleto}</p>
               <p className="pt-usuario-dato">Mentor</p>
@@ -158,12 +180,18 @@ export default function PortalMentor() {
                   <p className="pt-eyebrow">{encabezado[0]}</p>
                   <h1>{encabezado[1]}</h1>
                   <p className="pt-intro">{encabezado[2]}</p>
-                  {seccion === 'sesiones' && <MisSesiones />}
+                  {seccion === 'sesiones' && (
+                    <>
+                      <AgendarSeguimiento onAgendada={() => setVersionSesiones((v) => v + 1)} />
+                      <MisSesiones key={versionSesiones} salaInicial={salaInicial} />
+                    </>
+                  )}
+                  {seccion === 'charlas' && <Charlas salaInicial={charlaInicial} />}
                   {seccion === 'calendario' && <Calendario />}
                   {seccion === 'metas' && <MetasMentor />}
                   {seccion === 'estadisticas' && <EstadisticasMentor />}
                   {seccion === 'notificaciones' && <Notificaciones onCambio={ponerPendientes} />}
-                  {seccion === 'foro' && <Foro />}
+                  {seccion === 'foro' && <Foro key={irConsulta ?? 'lista'} consultaInicial={irConsulta} />}
                   {seccion === 'perfil' && <PerfilMentor />}
                   {seccion === 'cuenta' && <MiCuenta />}
                   {seccion === 'ayuda' && <CentroAyuda />}
@@ -174,6 +202,7 @@ export default function PortalMentor() {
         </div>
       </div>
 
+      <PerfilDesdeAviso />
       <AsistenteChat contexto={seccion} rol="MENTOR" />
     </div>
   );

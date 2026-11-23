@@ -8,11 +8,16 @@ const DIAS = [
   'Jueves', 'Viernes', 'Sábado'
 ];
 
-const horaCorta = (valor) => String(valor).slice(0, 5);
+import { hora12 } from './horas';
+
+const horaCorta = (valor) => hora12(valor);
 
 function obtenerDiaSemana(fecha) {
   const [anio, mes, dia] = fecha.split('-').map(Number);
-  const diaJS = new Date(anio, mes - 1, dia).getDay();
+  // Se arma con un año fijo y luego se pone el real: new Date(26, …) tomaría el año 26 como 1926.
+  const f = new Date(2000, mes - 1, dia);
+  f.setFullYear(anio);
+  const diaJS = f.getDay();
   return diaJS === 0 ? 7 : diaJS;
 }
 
@@ -24,31 +29,25 @@ function obtenerFechaLocal() {
   return `${anio}-${mes}-${dia}`;
 }
 
-function generarBloques(disponibilidades, fecha) {
-  if (!fecha) return [];
+// Convierte "HH:mm[:ss]" en minutos desde la medianoche y al revés.
+const aMinutos = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+const deMinutos = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00`;
 
+// Las franjas en que el mentor atiende ese día (cada una con su id, para reservar dentro de ella).
+function ventanasDelDia(disponibilidades, fecha) {
+  // Mientras se escribe el año (por ejemplo 0026) o si la fecha ya pasó, no hay horarios que mostrar.
+  if (!fecha || fecha < obtenerFechaLocal()) return [];
   const dia = obtenerDiaSemana(fecha);
-  const bloques = [];
-
-  disponibilidades
+  return disponibilidades
     .filter((d) => d.diaSemana === dia)
-    .forEach((d) => {
-      const inicio = Number(d.horaInicio.slice(0, 2));
-      const fin = Number(d.horaFin.slice(0, 2));
+    .map((d) => ({ idDisponibilidad: d.idDisponibilidad, inicio: aMinutos(d.horaInicio), fin: aMinutos(d.horaFin) }));
+}
 
-      for (let h = inicio; h + 1 <= fin; h++) {
-        const horaInicio = `${String(h).padStart(2, '0')}:00:00`;
-        const horaFin = `${String(h + 1).padStart(2, '0')}:00:00`;
-
-        bloques.push({
-          idDisponibilidad: d.idDisponibilidad,
-          horaInicio,
-          horaFin
-        });
-      }
-    });
-
-  return bloques;
+// Horas que se pueden elegir dentro de una franja, de media en media hora: [desde, hasta].
+function puntos(desde, hasta) {
+  const lista = [];
+  for (let t = desde; t <= hasta; t += 30) lista.push(t);
+  return lista;
 }
 
 // HU-07: agendar una sesión. HU-19: con "reprogramar" (una sesión del historial) mueve esa sesión a otro horario
@@ -120,7 +119,21 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
     return () => { activo = false; };
   }, [authFetch, mentor.cursosEnComun, reprogramando]);
 
-  const bloques = generarBloques(disponibilidades, fecha);
+  const ventanas = ventanasDelDia(disponibilidades, fecha);
+  const [ventanaId, setVentanaId] = useState('');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+  const ventana = ventanas.find((v) => String(v.idDisponibilidad) === String(ventanaId)) || ventanas[0] || null;
+
+  // Se arma la reserva cuando ya se eligió «desde» y «hasta» dentro de la franja.
+  function elegirRango(v, d, h) {
+    setError('');
+    if (v && d !== '' && h !== '' && Number(h) > Number(d)) {
+      setBloqueSeleccionado({ idDisponibilidad: v.idDisponibilidad, horaInicio: deMinutos(Number(d)), horaFin: deMinutos(Number(h)) });
+    } else {
+      setBloqueSeleccionado(null);
+    }
+  }
 
   async function confirmarReserva() {
     if (!fecha || !bloqueSeleccionado) {
@@ -152,8 +165,7 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
               fecha,
               horaInicio: bloqueSeleccionado.horaInicio,
               horaFin: bloqueSeleccionado.horaFin,
-              cursoId: cursoId ? Number(cursoId) : null,
-              enlaceReunion: 'https://meet.google.com/ere-qoah-awr'
+              cursoId: cursoId ? Number(cursoId) : null
             })
         }
       );
@@ -186,8 +198,10 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
   if (confirmacion) {
     return (
       <section className="bm-panel">
-        <h2>{reprogramando ? '¡Sesión reprogramada!' : '¡Sesión confirmada!'}</h2>
-        <p>{reprogramando ? 'Tu mentoría cambió de horario y avisamos al mentor.' : 'Tu mentoría se registró correctamente.'}</p>
+        <h2>{reprogramando ? '¡Sesión reprogramada!' : '¡Solicitud enviada!'}</h2>
+        <p>{reprogramando
+          ? 'Tu mentoría cambió de horario y avisamos al mentor.'
+          : 'Le pedimos la sesión al mentor. Cuando la acepte te llegará un aviso y aparecerá en «Mis sesiones».'}</p>
 
         <p><strong>Mentor:</strong> {mentor.nombres} {mentor.apellidos}</p>
         <p><strong>Fecha:</strong> {confirmacion.fecha}</p>
@@ -196,9 +210,7 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
           {horaCorta(confirmacion.horaInicio)} –{' '}
           {horaCorta(confirmacion.horaFin)}
         </p>
-        <p><strong>Estado:</strong> {confirmacion.estado}</p>
-
-        <p>Se procesará la notificación por correo electrónico.</p>
+        <p><strong>Estado:</strong> {confirmacion.estado === 'PENDIENTE' ? 'Pendiente de aprobación del mentor' : 'Confirmada'}</p>
 
         <button
           type="button"
@@ -237,7 +249,7 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
 
           {disponibilidades.map((d) => (
             <p key={d.idDisponibilidad}>
-              {DIAS[d.diaSemana] || `Día ${d.diaSemana}`}:{' '}
+              {DIAS[d.diaSemana % 7] || `Día ${d.diaSemana}`}:{' '}
               {horaCorta(d.horaInicio)} – {horaCorta(d.horaFin)}
             </p>
           ))}
@@ -271,6 +283,9 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
             value={fecha}
             onChange={(e) => {
               setFecha(e.target.value);
+              setVentanaId('');
+              setDesde('');
+              setHasta('');
               setBloqueSeleccionado(null);
               setError('');
             }}
@@ -280,35 +295,45 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
             <>
               <h3>Horarios para la fecha seleccionada</h3>
 
-              {bloques.length === 0 ? (
+              {!ventana ? (
                 <p className="bm-ayuda">
-                  El mentor no tiene horarios para ese día.
+                  {fecha < obtenerFechaLocal() ? 'Elige una fecha desde hoy.' : 'El mentor no tiene horarios para ese día.'}
                 </p>
               ) : (
-                <div className="bm-acciones">
-                  {bloques.map((b) => {
-                    const clave = `${b.idDisponibilidad}-${b.horaInicio}`;
-                    const seleccionado =
-                      bloqueSeleccionado?.idDisponibilidad ===
-                        b.idDisponibilidad &&
-                      bloqueSeleccionado?.horaInicio === b.horaInicio;
-
-                    return (
-                      <button
-                        key={clave}
-                        type="button"
-                        className={
-                          seleccionado ? 'bm-primario' : 'bm-secundario'
-                        }
-                        onClick={() => {
-                          setBloqueSeleccionado(b);
-                          setError('');
-                        }}
-                      >
-                        {horaCorta(b.horaInicio)} – {horaCorta(b.horaFin)}
-                      </button>
-                    );
-                  })}
+                <div className="ag-rango">
+                  {ventanas.length > 1 && (
+                    <>
+                      <label htmlFor="ag-franja">Franja del mentor</label>
+                      <select id="ag-franja" value={ventana.idDisponibilidad}
+                        onChange={(e) => { setVentanaId(e.target.value); setDesde(''); setHasta(''); setBloqueSeleccionado(null); }}>
+                        {ventanas.map((v) => (
+                          <option key={v.idDisponibilidad} value={v.idDisponibilidad}>{hora12(deMinutos(v.inicio))} – {hora12(deMinutos(v.fin))}</option>
+                        ))}
+                      </select>
+                    </>
+                  )}
+                  <p className="bm-ayuda">
+                    El mentor atiende de <strong>{hora12(deMinutos(ventana.inicio))}</strong> a <strong>{hora12(deMinutos(ventana.fin))}</strong>.
+                    Elige a qué hora quieres empezar y a qué hora terminar.
+                  </p>
+                  <div className="ag-rango-campos">
+                    <div>
+                      <label htmlFor="ag-desde">Desde</label>
+                      <select id="ag-desde" value={desde}
+                        onChange={(e) => { setDesde(e.target.value); setHasta(''); setBloqueSeleccionado(null); }}>
+                        <option value="" disabled>Elige la hora</option>
+                        {puntos(ventana.inicio, ventana.fin - 30).map((t) => <option key={t} value={t}>{hora12(deMinutos(t))}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="ag-hasta">Hasta</label>
+                      <select id="ag-hasta" value={hasta} disabled={desde === ''}
+                        onChange={(e) => { setHasta(e.target.value); elegirRango(ventana, desde, e.target.value); }}>
+                        <option value="" disabled>Elige la hora</option>
+                        {desde !== '' && puntos(Number(desde) + 30, ventana.fin).map((t) => <option key={t} value={t}>{hora12(deMinutos(t))}</option>)}
+                      </select>
+                    </div>
+                  </div>
                 </div>
               )}
             </>

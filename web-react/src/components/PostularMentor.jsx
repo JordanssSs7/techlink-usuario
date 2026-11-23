@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import './Cuenta.css';
 import { useAuth } from '../auth/authContext';
+import Avatar from './Avatar';
+import { useFotoPropia } from './fotoPerfil';
 
 const MAX_ARCHIVO = 5 * 1024 * 1024;
 const TIPOS = ['application/pdf', 'image/png', 'image/jpeg'];
 const MAX_COMENTARIO = 500;
+const NOTA_MINIMA = 17; // nota mínima, en el curso que se quiere dictar, para postular a mentor
 
 const tamano = (bytes) => (bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 const fecha = (iso) => (iso ? new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
@@ -18,7 +21,8 @@ const ESTADOS = {
 // HU-03: un estudiante de ciclos avanzados postula a ser mentor adjuntando su comprobante de cursos aprobados
 // (PDF o imagen, máximo 5 MB). Al enviarla queda «En revisión» y se le avisa que la recibimos.
 export default function PostularMentor() {
-  const { authFetch } = useAuth();
+  const { authFetch, usuario } = useAuth();
+  const fotoPropia = useFotoPropia();
   const [estado, setEstado] = useState(null);
   const [archivo, setArchivo] = useState(null);
   const [comentario, setComentario] = useState('');
@@ -90,9 +94,22 @@ export default function PostularMentor() {
   if (!estado) return error ? <p className="cu-error" role="alert">{error}</p> : <p className="cu-vacio">Cargando…</p>;
 
   const info = ESTADOS[estado.estado];
+  const iniciales = [usuario.nombres, usuario.apellidos].filter((x) => x && x !== '-').map((x) => x.trim()[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div className="cu">
+      <section className="cu-tarjeta cu-hero-insignia">
+        <Avatar idUsuario={fotoPropia.idUsuario} tieneFoto={fotoPropia.tieneFoto} version={fotoPropia.version}
+          iniciales={iniciales} tamano={104} insignia />
+        <div>
+          <h2 className="cu-titulo-tarjeta">Postula para que obtengas tu insignia</h2>
+          <p className="cu-ayuda">
+            Cuando un administrador apruebe tu postulación, este aro dorado rodeará tu foto de perfil y todos lo verán: en tu perfil
+            público, el ranking y las recomendaciones de mentores.
+          </p>
+        </div>
+      </section>
+
       {exito && (
         <p className="cu-aviso" role="status">
           ¡Postulación enviada! Su estado es «En revisión». Te enviamos un correo para confirmar que la recibimos.
@@ -121,29 +138,48 @@ export default function PostularMentor() {
             Adjunta el comprobante de tus cursos aprobados, sacado de tu cuenta de Tecsup. Un administrador lo revisará
             para acreditarte como mentor.
           </p>
-          <div className="cu-pasos">
-            <strong>Cómo obtener tu comprobante</strong>
+          <div className="cu-pasos2">
+            <h3>¿Cómo postular?</h3>
             <ol>
               <li>
-                Entra a tu cuenta de alumno en{' '}
-                <a href="https://sis.tecsup.edu.pe/Alumnos/Login" target="_blank" rel="noopener noreferrer">sis.tecsup.edu.pe</a>.
+                <span className="cu-num">1</span>
+                <div><strong>Entra a tu cuenta de alumno</strong>
+                  <p>Ingresa a <a href="https://sis.tecsup.edu.pe/Alumnos/Login" target="_blank" rel="noopener noreferrer">sis.tecsup.edu.pe</a> con tu usuario de Tecsup.</p></div>
               </li>
-              <li>Ve a la sección <strong>Consultas</strong> y elige <strong>Concentración de calificaciones</strong>.</li>
-              <li>Busca el período donde aparece el curso que quieres enseñar y toma una captura de pantalla (o descarga el PDF).</li>
-              <li>Sube la captura en JPG o PNG, o el PDF.</li>
+              <li>
+                <span className="cu-num">2</span>
+                <div><strong>Abre «Concentración de calificaciones»</strong>
+                  <p>Ve a la sección <strong>Consultas</strong> y elige <strong>Concentración de calificaciones</strong>.</p></div>
+              </li>
+              <li>
+                <span className="cu-num">3</span>
+                <div><strong>Toma la captura o descarga el PDF</strong>
+                  <p>Busca el período donde aparece el curso que quieres enseñar. Basta con los cursos que vas a dictar, no todos. En cada curso tu nota final debe ser de <strong>{NOTA_MINIMA} o más</strong> (escala de 0 a 20).</p></div>
+              </li>
+              <li>
+                <span className="cu-num">4</span>
+                <div><strong>Súbelo aquí y envía</strong>
+                  <p>Adjunta la imagen (JPG o PNG) o el PDF, añade un comentario si quieres y pulsa «Enviar postulación».</p></div>
+              </li>
             </ol>
-            <p>
-              Basta con las notas de los cursos que vas a dictar como mentor, no de todos. La captura debe mostrar tu nombre, el
-              período y la nota. Solo se aceptan imágenes sin editar: un administrador las compara con tu cuenta.
+            <p className="cu-importante">
+              <strong>Importante:</strong> Solo puedes ser mentor de cursos aprobados con nota {NOTA_MINIMA} o más. La captura debe mostrar tu nombre, el período y la nota. Solo se aceptan imágenes sin editar:
+              un administrador las compara con tu cuenta.
             </p>
           </div>
 
           <input ref={entrada} type="file" accept="application/pdf,image/png,image/jpeg" className="cu-oculto" onChange={elegir} aria-label="Elegir comprobante" />
-          <button type="button" className="cu-zona" onClick={() => entrada.current?.click()}>
-            {archivo
-              ? <><strong>{archivo.name}</strong><span>{tamano(archivo.size)} · toca para cambiarlo</span></>
-              : <><strong>Elegir comprobante</strong><span>PDF, PNG o JPG · máximo 5 MB</span></>}
-          </button>
+          <div className="cu-zona-envoltura">
+            <button type="button" className="cu-zona" onClick={() => entrada.current?.click()}>
+              {archivo
+                ? <><strong>{archivo.name}</strong><span>{tamano(archivo.size)} · toca para cambiarlo</span></>
+                : <><strong>Elegir comprobante</strong><span>PDF, PNG o JPG · máximo 5 MB</span></>}
+            </button>
+            {archivo && (
+              <button type="button" className="cu-zona-quitar" aria-label="Quitar el archivo elegido" title="Quitar archivo"
+                onClick={() => { setArchivo(null); setError(''); }}>✕</button>
+            )}
+          </div>
 
           <label htmlFor="po-comentario">Comentario (opcional)</label>
           <textarea

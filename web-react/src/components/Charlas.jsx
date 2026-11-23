@@ -12,8 +12,9 @@ const fechaLarga = (iso) => {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 };
 const hora = (t) => String(t).slice(0, 5);
+const MESES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
 
-// Una charla: nombre, temática, fecha, hora y enlace (HU-06), con el botón para inscribirse o anular (HU-25).
+// Una charla: nombre, temática, fecha y hora (HU-06), con el botón para inscribirse o anular (HU-25).
 // onInscribir y onAnular devuelven el texto de error del servidor, o una cadena vacía si todo salió bien.
 function TarjetaCharla({ charla, onInscribir, onAnular, onEntrar }) {
   const [error, setError] = useState('');
@@ -27,52 +28,70 @@ function TarjetaCharla({ charla, onInscribir, onAnular, onEntrar }) {
   }
 
   const terminada = !charla.vigente;
+  const [a, m, d] = charla.fecha.split('-').map(Number);
+  const ahora = new Date();
+  const inicio = new Date(a, m - 1, d, ...charla.horaInicio.split(':').map(Number).slice(0, 2));
+  // Sigue «en vivo» aunque el invitado se pase un poco de la hora de fin: el servidor la mantiene vigente mientras él esté en la sala.
+  const enVivo = !terminada && ahora >= inicio;
+  const hoy = !terminada && !enVivo && inicio.toDateString() === ahora.toDateString();
+
   return (
-    <li className={`ch-tarjeta${terminada ? ' terminada' : ''}`}>
-      <div className="ch-cabecera">
-        <h3>{charla.nombre}</h3>
-        {charla.inscrito && !terminada && <span className="ch-sello">✓ Inscrito</span>}
-        {terminada && <span className="ch-sello apagado">{charla.activa ? 'Finalizada' : 'Desactivada'}</span>}
+    <li className={`ch-tarjeta${terminada ? ' terminada' : ''}${enVivo ? ' en-vivo' : ''}${charla.imagen ? ' con-imagen' : ''}`}
+      style={charla.imagen ? { '--ch-foto': `url(${charla.imagen})` } : undefined}>
+      <div className="ch-fecha" aria-hidden="true">
+        <strong>{d}</strong>
+        <span>{MESES[m - 1]}</span>
       </div>
 
-      <p className="ch-etiquetas">
-        <span className="ch-chip">{charla.tematica}</span>
-        {charla.curso && <span className="ch-chip suave">Refuerza {charla.curso}</span>}
-      </p>
-      {charla.razon && <p className="ch-razon">★ {charla.razon}</p>}
-      {charla.descripcion && <p className="ch-descripcion">{charla.descripcion}</p>}
-
-      <p className="ch-cuando">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M8 3v4M16 3v4M3.5 10h17" />
-        </svg>
-        {fechaLarga(charla.fecha)} · {hora(charla.horaInicio)} – {hora(charla.horaFin)}
-      </p>
-      <a className="ch-enlace" href={charla.enlace} target="_blank" rel="noreferrer">{charla.enlace}</a>
-
-      {error && <p className="ch-error" role="alert">{error}</p>}
-      {!terminada && (
-        <div className="ch-acciones">
-          {charla.inscrito ? (
-            <>
-              {/* HU-08: sala virtual de la charla (videollamada, pantalla compartida y chat con código). */}
-              <button type="button" className="ch-boton primario" onClick={() => onEntrar(charla)}>Entrar a la sala</button>
-              <button type="button" className="ch-boton" disabled={trabajando} onClick={() => ejecutar(onAnular)}>Anular inscripción</button>
-            </>
-          ) : (
-            <button type="button" className="ch-boton primario" disabled={trabajando} onClick={() => ejecutar(onInscribir)}>
-              {trabajando ? 'Inscribiendo…' : 'Inscribirme'}
-            </button>
-          )}
+      <div className="ch-contenido">
+        <div className="ch-cabecera">
+          <h3>{charla.nombre}</h3>
+          {enVivo && <span className="ch-sello vivo"><i aria-hidden="true" /> En vivo</span>}
+          {hoy && <span className="ch-sello hoy">Hoy</span>}
+          {charla.inscrito && !terminada && !enVivo && <span className="ch-sello">✓ Inscrito</span>}
+          {terminada && <span className="ch-sello apagado">{charla.activa ? 'Finalizada' : 'Desactivada'}</span>}
         </div>
-      )}
+
+        <p className="ch-etiquetas">
+          <span className="ch-chip">{charla.tematica}</span>
+          {charla.curso && <span className="ch-chip suave">Refuerza {charla.curso}</span>}
+        </p>
+        {charla.razon && <p className="ch-razon">★ {charla.razon}</p>}
+        {charla.descripcion && <p className="ch-descripcion">{charla.descripcion}</p>}
+
+        <p className="ch-cuando">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+          </svg>
+          {fechaLarga(charla.fecha)} · {hora(charla.horaInicio)} – {hora(charla.horaFin)}
+        </p>
+
+        {error && <p className="ch-error" role="alert">{error}</p>}
+        {!terminada && (
+          <div className="ch-acciones">
+            {charla.inscrito ? (
+              <>
+                {/* HU-08: sala virtual de la charla: el invitado habla y quien quiera preguntar levanta la mano. */}
+                <button type="button" className="ch-boton primario" onClick={() => onEntrar(charla)}>
+                  {enVivo ? 'Entrar ahora' : 'Entrar a la sala'}
+                </button>
+                <button type="button" className="ch-boton" disabled={trabajando} onClick={() => ejecutar(onAnular)}>Anular inscripción</button>
+              </>
+            ) : (
+              <button type="button" className="ch-boton primario" disabled={trabajando} onClick={() => ejecutar(onInscribir)}>
+                {trabajando ? 'Inscribiendo…' : 'Inscribirme'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </li>
   );
 }
 
 // HU-06: charlas recomendadas según los intereses y los cursos críticos del estudiante.
 // HU-25: inscribirse a una charla vigente y ver "Mis charlas".
-export default function Charlas() {
+export default function Charlas({ salaInicial = null }) {
   const { authFetch } = useAuth();
   const [pestana, setPestana] = useState('recomendadas');
   const [recomendadas, setRecomendadas] = useState(null);
@@ -80,7 +99,7 @@ export default function Charlas() {
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
   const [version, setVersion] = useState(0);
-  const [salaCharla, setSalaCharla] = useState(null); // HU-08: id de la charla cuya sala virtual está abierta
+  const [salaCharla, setSalaCharla] = useState(salaInicial); // HU-08: id de la charla cuya sala virtual está abierta
   const recargar = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
@@ -188,7 +207,10 @@ export default function Charlas() {
             </>
           )}
           {recomendadas.recomendadas.length === 0 && recomendadas.otras.length === 0 && !error && (
-            <p className="ch-vacio">No hay charlas próximas por ahora. Cuando se registren nuevas, aparecerán aquí.</p>
+            <div className="ch-vacio">
+              <strong>No hay charlas próximas por ahora</strong>
+              <p>Cuando el equipo de TechLink programe una con un invitado, la verás aquí y podrás inscribirte.</p>
+            </div>
           )}
         </>
       )}
@@ -196,7 +218,10 @@ export default function Charlas() {
       {!cargando && pestana === 'mias' && (
         <>
           {mias.length === 0 && !error && (
-            <p className="ch-vacio">Todavía no te inscribiste a ninguna charla. Elige una en la pestaña "Para ti".</p>
+            <div className="ch-vacio">
+              <strong>Todavía no te inscribiste a ninguna charla</strong>
+              <p>Elige una en la pestaña «Para ti» y aparecerá aquí.</p>
+            </div>
           )}
           <ul className="ch-lista">
             {mias.map((c) => <TarjetaCharla key={c.id} charla={c} onInscribir={inscribir} onAnular={anular} onEntrar={(ch) => setSalaCharla(ch.id)} />)}

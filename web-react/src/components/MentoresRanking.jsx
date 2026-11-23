@@ -5,6 +5,14 @@ import Avatar from './Avatar';
 import AgendarSesion from './AgendarSesion';
 import Cargando from './Cargando';
 import ReportarModal from './ReportarModal';
+import { usePortadaUrl } from './fotoPerfil';
+
+// La portada del perfil público (si el mentor puso una).
+function PortadaPublica({ idUsuario }) {
+  const url = usePortadaUrl(idUsuario);
+  if (!url) return null;
+  return <div className="cu-portada publica" style={{ backgroundImage: `url(${url})` }} role="img" aria-label="Portada del perfil" />;
+}
 
 const iniciales = (m) => [m.nombres, m.apellidos].filter(Boolean).map((x) => x.trim()[0]).join('').slice(0, 2).toUpperCase();
 const nombreCompleto = (m) => [m.nombres, m.apellidos].filter(Boolean).join(' ');
@@ -45,7 +53,7 @@ function Insignias({ lista }) {
 }
 
 // HU-14: perfil público de un mentor (cursos dominados, promedio de estrellas, últimos comentarios e insignias).
-function PerfilPublico({ idMentor, onVolver, onAgendar }) {
+export function PerfilPublico({ idMentor, onVolver, onAgendar, acciones = null, puedeAgendar = true, etiquetaVolver = 'Volver a los mentores' }) {
   const { authFetch, usuario } = useAuth();
   const [perfil, setPerfil] = useState(null);
   const [error, setError] = useState('');
@@ -68,26 +76,29 @@ function PerfilPublico({ idMentor, onVolver, onAgendar }) {
 
   return (
     <div className="cu">
-      <button type="button" className="cu-volver" onClick={onVolver}>← Volver a los mentores</button>
+      <button type="button" className="cu-volver" onClick={onVolver}>{etiquetaVolver}</button>
       {error && <p className="cu-error" role="alert">{error}</p>}
       {!perfil && !error && <Cargando texto="Cargando perfil…" />}
 
       {perfil && (
         <>
+          <PortadaPublica idUsuario={perfil.idUsuario} />
           <section className="cu-tarjeta cu-cabecera">
-            <Avatar idUsuario={perfil.idUsuario} tieneFoto={perfil.tieneFoto} iniciales={iniciales(perfil)} tamano={96} />
+            <Avatar idUsuario={perfil.idUsuario} tieneFoto={perfil.tieneFoto} iniciales={iniciales(perfil)} tamano={96} insignia mostrarEstado />
             <div className="cu-cabecera-texto">
               <h2 className="cu-nombre">{nombreCompleto(perfil)}</h2>
               {perfil.especialidad && <p className="cu-sub">{perfil.especialidad}</p>}
+              {perfil.frase && <p className="cu-estado fijo"><span aria-hidden="true">💬</span>{perfil.frase}</p>}
               <Calificacion promedio={perfil.promedio} total={perfil.totalCalificaciones} />
               <p className="cu-datos">
                 <span><strong>{horas(perfil.horasDictadas)}</strong> dictadas</span>
                 <span><strong>{perfil.sesionesCompletadas}</strong> sesiones</span>
               </p>
               <Insignias lista={perfil.insignias} />
+              {acciones}
             </div>
             <div className="cu-acciones-perfil">
-              <button type="button" className="cu-boton primario" onClick={() => onAgendar(perfil)}>Agendar sesión</button>
+              {puedeAgendar && <button type="button" className="cu-boton primario" onClick={() => onAgendar(perfil)}>Agendar sesión</button>}
               {perfil.idUsuario !== usuario.id && (
                 <button type="button" className="cu-boton" onClick={() => setReportando(true)}>Reportar</button>
               )}
@@ -321,7 +332,7 @@ export default function MentoresRanking() {
         {mentores?.map((m) => (
           <li key={m.idMentor} className={`cu-mentor${m.posicion <= 3 ? ' podio' : ''}`}>
             <span className="cu-puesto" aria-label={`Puesto ${m.posicion}`}>{String(m.posicion).padStart(2, '0')}</span>
-            <Avatar idUsuario={m.idUsuario} tieneFoto={m.tieneFoto} iniciales={iniciales(m)} tamano={60} />
+            <Avatar idUsuario={m.idUsuario} tieneFoto={m.tieneFoto} iniciales={iniciales(m)} tamano={60} insignia mostrarEstado />
             <div className="cu-mentor-texto">
               <h3 className="cu-nombre">{nombreCompleto(m)}</h3>
               {m.especialidad && <p className="cu-sub">{m.especialidad}</p>}

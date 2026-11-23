@@ -106,6 +106,8 @@
   border: 1px solid var(--line);
   border-radius: 999px;
 }
+.selector-hora { display: flex; gap: 0.2rem; min-width: 0; }
+.selector-hora select { flex: 1; min-width: 0; padding: 0.45rem 0.3rem; }
 .mentor-activo { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 9px; }
 .mentor-horario-error { grid-column: 1 / -1; margin: 0; }
 .mentor-agregar { margin-bottom: 0.8rem; }
@@ -115,5 +117,9 @@
 
 @media (max-width: 480px) {
   .mentor-horario { grid-template-columns: 1fr 1fr; }
-  .mentor-horario select { grid-column: 1 / -1; }
+  .mentor-horario > select { grid-column: 1 / -1; }
 }
+
+.mentor-hora12 { grid-column: 1 / -1; font-size: 12.5px; font-weight: 600; color: #6b6b72; }
+
+.mentor-sin-guardar { margin: 0 0 0.6rem; padding: 0.6rem 0.9rem; font-size: 11px; color: #7a4b00; background: #fff7e0; border: 1px solid #f0d88a; border-radius: 10px; }

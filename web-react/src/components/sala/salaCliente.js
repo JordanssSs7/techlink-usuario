@@ -1,4 +1,5 @@
 import { FondoVirtual } from './fondoVirtual';
+import { GrabadorSala } from './grabadorSala';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -19,8 +20,18 @@ const MENSAJES_DE_CIERRE = {
 // La negociación de WebRTC sigue el patrón "perfect negotiation": como cualquiera de los dos lados puede ofrecer (por
 // ejemplo, al empezar a compartir pantalla), uno de cada pareja es "cortés" y cede si las ofertas chocan.
 export class SalaCliente {
-  constructor({ authFetch, tipo, id, alCambio }) {
-    this.authFetch = authFetch;
+  // invitado: { token, nombre } cuando quien entra es el invitado de una charla (sin cuenta): usa su enlace secreto en lugar del token.
+  constructor({ authFetch, tipo, id, alCambio, invitado = null }) {
+    this.invitado = invitado;
+    // Los asistentes de una charla escuchan: entran con el micrófono apagado y piden la palabra levantando la mano.
+    this.esAsistente = tipo === 'charla' && !invitado;
+    this.mano = false;
+    this.puedeHablar = false;
+    this.avisoPalabra = '';
+    this.avisoSala = '';
+    this.authFetch = invitado
+      ? (ruta, opciones = {}) => fetch(`${API_URL}${ruta}`, { ...opciones, headers: { 'Content-Type': 'application/json', ...(opciones.headers ?? {}) } })
+      : authFetch;
     this.tipo = tipo;
     this.id = id;
     this.alCambio = alCambio;
@@ -49,6 +60,10 @@ export class SalaCliente {
     this.camaraEncendida = true;
     this.microfonoEncendido = true;
     this.cambiandoFondo = false;
+    this.grabador = null; // GrabadorSala mientras el mentor graba
+    this.grabando = false;
+    this.grabacionPausada = false;
+    this.avisoGrabacion = '';
 
     this.alVisibilidad = () => this.#alCambiarVisibilidad();
   }
@@ -77,7 +92,17 @@ export class SalaCliente {
       camaraEncendida: this.camaraEncendida,
       microfonoEncendido: this.microfonoEncendido,
       opcionFondo: this.opcionFondo,
-      cambiandoFondo: this.cambiandoFondo
+      cambiandoFondo: this.cambiandoFondo,
+      esInvitado: Boolean(this.invitado),
+      esAsistente: this.esAsistente,
+      mano: this.mano,
+      puedeHablar: this.puedeHablar,
+      avisoPalabra: this.avisoPalabra,
+      avisoSala: this.avisoSala,
+      grabando: this.grabando,
+      grabacionPausada: this.grabacionPausada,
+      puedeGrabar: this.tipo === 'sesion' && this.yo?.rol === 'MENTOR' && GrabadorSala.disponible(),
+      avisoGrabacion: this.avisoGrabacion
     });
   }
 
@@ -86,7 +111,7 @@ export class SalaCliente {
   async iniciar() {
     document.addEventListener('visibilitychange', this.alVisibilidad);
     try {
-      const response = await this.authFetch(`/api/salas/${this.tipo}/${this.id}`);
+      const response = await this.authFetch(this.invitado ? `/api/charlas/invitado/${this.invitado.token}` : `/api/salas/${this.tipo}/${this.id}`);
       const data = await response.json().catch(() => null);
       if (!response.ok) throw new Error(data?.error || 'No se pudo abrir la sala.');
       this.info = data;
@@ -251,7 +276,9 @@ export class SalaCliente {
     this.error = '';
     this.#emitir();
     try {
-      const response = await this.authFetch(`/api/salas/${this.tipo}/${this.id}/ticket`, { method: 'POST' });
+      const response = this.invitado
+        ? await this.authFetch(`/api/charlas/invitado/${this.invitado.token}/ticket`, { method: 'POST', body: JSON.stringify({ nombre: this.invitado.nombre }) })
+        : await this.authFetch(`/api/salas/${this.tipo}/${this.id}/ticket`, { method: 'POST' });
       const data = await response.json().catch(() => null);
       if (!response.ok) throw new Error(data?.error || 'No se pudo entrar a la sala.');
       this.ice = data.ice ?? [];
@@ -300,6 +327,7 @@ export class SalaCliente {
   }
 
   salir() {
+    this.#cerrarGrabacion();
     this.#cerrarLlamada();
     if (this.ws) {
       this.ws.onclose = null;
@@ -318,9 +346,13 @@ export class SalaCliente {
     this.participantes.clear();
     this.yo = null;
     this.mensajes = [];
+    this.mano = false;
+    this.puedeHablar = false;
+    this.avisoPalabra = '';
   }
 
   destruir() {
+    this.#cerrarGrabacion();
     this.destruido = true;
     document.removeEventListener('visibilitychange', this.alVisibilidad);
     if (this.ws) {
@@ -351,14 +383,18 @@ export class SalaCliente {
         break;
       case 'entra':
         this.participantes.set(m.participante.id, m.participante);
+        if (m.participante.rol === 'INVITADO') this.avisoSala = '';
         // Al preparar la conexión con el que llega, ambos pueden ofrecer a la vez: el patrón de negociación lo resuelve.
-        this.#crearPeer(m.participante.id);
+        if (this.#conectaCon(m.participante)) this.#crearPeer(m.participante.id);
         this.#emitir();
         break;
-      case 'sale':
+      case 'sale': {
+        const salio = this.participantes.get(m.id);
+        if (salio?.rol === 'INVITADO' && !this.invitado) this.avisoSala = 'El invitado salió de la sala. Si vuelve, la charla continúa.';
         this.#quitarParticipante(m.id);
         this.#emitir();
         break;
+      }
       case 'estado': {
         const p = this.participantes.get(m.id);
         if (p) this.participantes.set(m.id, { ...p, estado: m.estado });
@@ -371,6 +407,12 @@ export class SalaCliente {
         break;
       case 'senal':
         this.#alSenal(m.de, m.datos);
+        break;
+      case 'palabra':
+        this.#alRecibirPalabra(m.permitir);
+        break;
+      case 'fin':
+        this.#alTerminarCharla();
         break;
       case 'error':
         this.avisoChat = m.mensaje;
@@ -389,9 +431,18 @@ export class SalaCliente {
     this.fase = 'dentro';
     this.avisoChat = '';
     // El que llega es quien empieza la llamada con cada uno de los que ya estaban.
-    for (const p of m.participantes) this.#crearPeer(p.id);
+    for (const p of m.participantes) {
+      if (this.#conectaCon(p)) this.#crearPeer(p.id);
+    }
     this.#enviarEstado();
     this.#emitir();
+  }
+
+  // En una charla con mucha gente cada asistente se conecta solo con el invitado (no con los demás asistentes): así la llamada aguanta
+  // decenas de personas. En sesiones de mentoría todos se conectan con todos.
+  #conectaCon(p) {
+    if (this.tipo !== 'charla') return true;
+    return this.yo?.rol === 'INVITADO' || p.rol === 'INVITADO';
   }
 
   #quitarParticipante(id) {
@@ -413,8 +464,167 @@ export class SalaCliente {
       camara: this.camaraEncendida && Boolean(this.camara),
       microfono: this.microfonoEncendido && Boolean(this.audio),
       pantalla: Boolean(this.pantalla),
-      pantallaStream: this.pantalla?.id ?? ''
+      pantallaStream: this.pantalla?.id ?? '',
+      grabando: this.grabando,
+      pausada: this.grabacionPausada,
+      mano: this.mano
     });
+  }
+
+  // ---------- Charlas: levantar la mano y dar la palabra ----------
+
+  levantarMano() {
+    if (!this.esAsistente) return;
+    this.mano = !this.mano;
+    this.avisoPalabra = '';
+    this.#enviarEstado();
+    this.#emitir();
+  }
+
+  // Solo el invitado puede: da la palabra a quien levantó la mano. A esa persona le llega el aviso y se le baja la mano; cada quien decide
+  // cuándo prender su micrófono y su cámara.
+  darPalabra(id, permitir) {
+    if (!this.invitado) return;
+    this.#enviar({ t: 'palabra', para: id, permitir });
+  }
+
+  // El invitado terminó la charla: se cierra la llamada y se muestra que finalizó (la pantalla ya no queda esperando).
+  #alTerminarCharla() {
+    if (this.invitado) return;
+    this.#cerrarLlamada();
+    if (this.ws) {
+      this.ws.onclose = null;
+      this.ws.close(1000, 'fin');
+      this.ws = null;
+    }
+    this.fase = 'finalizada';
+    this.#emitir();
+  }
+
+  // Solo el invitado: da por terminada la charla para todos y sale.
+  terminarCharla() {
+    if (!this.invitado) return;
+    this.#enviar({ t: 'fin' });
+    this.salir();
+  }
+
+  #alRecibirPalabra(permitir) {
+    if (!this.esAsistente) return;
+    this.puedeHablar = Boolean(permitir);
+    this.mano = false;
+    this.avisoPalabra = this.puedeHablar ? 'Te dieron la palabra: ya puedes hacer tu pregunta.' : 'Terminó tu turno.';
+    this.#enviarEstado();
+    this.#emitir();
+  }
+
+  // ---------- Grabación (solo el mentor de la sesión) ----------
+
+  // Lo que se ve y se oye ahora mismo en la reunión, para armar el video: pantalla compartida, cámaras de todos y el audio de todos.
+  #fuentesGrabacion() {
+    const camaras = [{
+      id: 'yo', nombre: this.yo?.nombre ?? '', stream: this.flujoLocal, activa: this.camaraEncendida && Boolean(this.camara)
+    }];
+    const audios = [];
+    if (this.audio) {
+      this.flujoMicrofono ??= new MediaStream([this.audio]);
+      audios.push(this.flujoMicrofono);
+    }
+    let pantalla = this.pantalla ?? null;
+    for (const p of this.participantes.values()) {
+      const streams = [...(this.peers.get(p.id)?.streams.values() ?? [])];
+      const flujoPantalla = p.estado?.pantalla ? streams.find((f) => f.id === p.estado.pantallaStream) : null;
+      const flujoCamara = streams.find((f) => f.id !== p.estado?.pantallaStream) ?? null;
+      if (flujoPantalla && !pantalla) pantalla = flujoPantalla;
+      camaras.push({ id: p.id, nombre: p.nombre, stream: flujoCamara, activa: Boolean(p.estado?.camara) });
+      if (flujoCamara) audios.push(flujoCamara);
+    }
+    return { pantalla, camaras, audios };
+  }
+
+  // Sube una parte del video (con hasta 3 intentos). Si el servidor dice que no se puede, se detiene la grabación.
+  async #subirParte(n, blob) {
+    let ultimo = null;
+    for (let intento = 0; intento < 3; intento += 1) {
+      try {
+        const response = await this.authFetch(`/api/sesiones/${this.id}/grabacion/parte?n=${n}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: blob
+        });
+        if (response.ok) return;
+        const data = await response.json().catch(() => ({}));
+        ultimo = new Error(data.error || 'No se pudo guardar la grabación.');
+        if (response.status >= 400 && response.status < 500) break; // un error del servidor que no se arregla reintentando
+      } catch (e) {
+        ultimo = e;
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    throw ultimo;
+  }
+
+  iniciarGrabacion() {
+    if (this.grabando || this.tipo !== 'sesion' || this.yo?.rol !== 'MENTOR' || !GrabadorSala.disponible()) return;
+    this.grabador = new GrabadorSala({
+      fuentes: () => this.#fuentesGrabacion(),
+      alParte: (n, blob) => this.#subirParte(n, blob),
+      alFallar: (e) => {
+        this.avisoGrabacion = `${e.message || 'No se pudo guardar la grabación.'} La grabación se detuvo.`;
+        this.detenerGrabacion();
+      }
+    });
+    try {
+      this.grabador.iniciar();
+    } catch {
+      this.grabador = null;
+      this.avisoGrabacion = 'Tu navegador no pudo iniciar la grabación.';
+      this.#emitir();
+      return;
+    }
+    this.grabando = true;
+    this.avisoGrabacion = '';
+    this.#enviarEstado(); // los demás ven el aviso «Se está grabando»
+    this.#emitir();
+  }
+
+  pausarGrabacion() {
+    if (!this.grabador || this.grabacionPausada) return;
+    this.grabador.pausar();
+    this.grabacionPausada = true;
+    this.#enviarEstado();
+    this.#emitir();
+  }
+
+  reanudarGrabacion() {
+    if (!this.grabador || !this.grabacionPausada) return;
+    this.grabador.reanudar();
+    this.grabacionPausada = false;
+    this.#enviarEstado();
+    this.#emitir();
+  }
+
+  async detenerGrabacion() {
+    const grabador = this.grabador;
+    if (!grabador) return;
+    this.grabador = null;
+    this.grabando = false;
+    this.grabacionPausada = false;
+    this.#enviarEstado();
+    this.avisoGrabacion = this.avisoGrabacion || 'Guardando la grabación…';
+    this.#emitir();
+    try {
+      const duracion = await grabador.detener();
+      if (grabador.n > 0 && !grabador.fallo) {
+        const response = await this.authFetch(`/api/sesiones/${this.id}/grabacion/terminar?duracion=${duracion}`, { method: 'POST' });
+        this.avisoGrabacion = response.ok ? 'Grabación guardada. La verás en tu historial de sesiones.' : 'No se pudo terminar de guardar la grabación.';
+      }
+    } catch {
+      this.avisoGrabacion = 'No se pudo terminar de guardar la grabación.';
+    }
+    this.#emitir();
+  }
+
+  // Si el mentor sale con la grabación en marcha, se termina de guardar lo grabado hasta ese momento.
+  #cerrarGrabacion() {
+    if (this.grabador) this.detenerGrabacion();
   }
 
   // ---------- Chat ----------

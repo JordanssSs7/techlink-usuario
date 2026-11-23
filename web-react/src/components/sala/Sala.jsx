@@ -16,6 +16,9 @@ const ICONOS = {
   fondo: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="12" cy="10" r="2.5" /><path d="M7 19c.8-3 2.6-4.5 5-4.5s4.2 1.5 5 4.5" /></>,
   chat: <><path d="M4 5h16v11H9l-5 4z" /><path d="M8 9h8M8 12h5" /></>,
   personas: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6" /></>,
+  pausa: <><path d="M9 5v14M15 5v14" /></>,
+  reanudar: <><path d="M8 5v14l11-7z" /></>,
+  grabar: <><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="3" fill="currentColor" /></>,
   salir: <><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" /><path d="M10 17l-5-5 5-5M5 12h11" /></>
 };
 
@@ -149,18 +152,23 @@ function Previa({ s, cliente, onCerrar }) {
   );
 }
 
-function Personas({ s }) {
+function Personas({ s, cliente }) {
   const filas = [
     { id: s.yo.id, nombre: `${s.yo.nombre} (tú)`, rol: s.yo.rol, camara: s.camaraEncendida && s.tieneCamara, microfono: s.microfonoEncendido && s.tieneMicrofono, pantalla: Boolean(s.pantallaLocal) },
-    ...s.participantes.map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol, camara: p.estado?.camara, microfono: p.estado?.microfono, pantalla: p.estado?.pantalla }))
+    ...s.participantes.map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol, camara: p.estado?.camara, microfono: p.estado?.microfono, pantalla: p.estado?.pantalla, mano: p.estado?.mano }))
   ];
+  filas[0].mano = s.mano;
   return (
     <ul className="sa-personas" aria-label="Participantes">
       {filas.map((f) => (
         <li key={f.id}>
           <span className="sa-avatar" aria-hidden="true">{iniciales(f.nombre)}</span>
-          <span className="sa-persona-nombre">{f.nombre}<small>{f.rol === 'MENTOR' ? 'Mentor' : 'Estudiante'}</small></span>
+          <span className="sa-persona-nombre">{f.nombre}<small>{f.rol === 'INVITADO' ? 'Invitado' : f.rol === 'MENTOR' ? 'Mentor' : 'Estudiante'}</small></span>
           <span className="sa-persona-estado">
+            {f.mano && <span className="sa-mano" title="Tiene la mano levantada">✋</span>}
+            {s.esInvitado && f.mano && (
+              <button type="button" className="sa-enlace" onClick={() => cliente.darPalabra(f.id, true)}>Dar la palabra</button>
+            )}
             {f.pantalla && <span title="Compartiendo pantalla"><Icono nombre="pantalla" /></span>}
             <span className={f.microfono ? '' : 'apagado'} title={f.microfono ? 'Micrófono encendido' : 'Micrófono silenciado'}><Icono nombre={f.microfono ? 'mic' : 'micOff'} /></span>
             <span className={f.camara ? '' : 'apagado'} title={f.camara ? 'Cámara encendida' : 'Cámara apagada'}><Icono nombre={f.camara ? 'cam' : 'camOff'} /></span>
@@ -177,20 +185,29 @@ const flujoPantalla = (p) => (p.estado?.pantalla ? p.streams.find((f) => f.id ==
 const flujoCamara = (p) => p.streams.find((f) => f.id !== p.estado?.pantallaStream) ?? null;
 
 function Llamada({ s, cliente, onCerrar }) {
-  const [panel, setPanel] = useState('chat'); // chat | personas | null
+  const [panel, setPanel] = useState(s.esInvitado ? 'personas' : 'chat'); // chat | personas | null
   const [verFondo, setVerFondo] = useState(false);
 
   const compartiendo = s.participantes.find((p) => flujoPantalla(p));
+  const manos = s.participantes.filter((p) => p.estado?.mano).length;
+  const seGraba = s.grabando || s.participantes.some((p) => p.estado?.grabando);
+  const enPausa = s.grabando ? s.grabacionPausada : s.participantes.some((p) => p.estado?.grabando && p.estado?.pausada);
   const cuadros = [
     <Cuadro key="yo" nombre={s.yo.nombre} flujo={s.flujoLocal} camara={s.camaraEncendida && s.tieneCamara} microfono={s.microfonoEncendido && s.tieneMicrofono} local />,
-    ...s.participantes.map((p) => (
+    // En las charlas solo se ven el invitado y, para el invitado, quien tiene la palabra: los demás asistentes no se conectan entre sí.
+    ...s.participantes.filter((p) => s.sala.tipo !== 'CHARLA' || p.rol === 'INVITADO' || (s.esInvitado && p.estado?.microfono)).map((p) => (
       <Cuadro key={p.id} nombre={p.nombre} flujo={flujoCamara(p)} camara={Boolean(p.estado?.camara)} microfono={Boolean(p.estado?.microfono)} />
     ))
   ];
   const alternarPanel = (nombre) => setPanel((actual) => (actual === nombre ? null : nombre));
 
   function salir() {
-    cliente.salir();
+    if (s.esInvitado) {
+      if (!window.confirm('¿Terminar la charla? Los asistentes verán que finalizó.')) return;
+      cliente.terminarCharla();
+    } else {
+      cliente.salir();
+    }
     onCerrar();
   }
 
@@ -201,6 +218,12 @@ function Llamada({ s, cliente, onCerrar }) {
           <strong>{s.sala.titulo}</strong>
           <span className="sa-barra-sub">{s.participantes.length + 1} {s.participantes.length === 0 ? 'persona' : 'personas'} · cierra a las {horaCorta(s.sala.cierra)}</span>
         </div>
+        {seGraba && (
+          <span className={`sa-grabando${enPausa ? ' pausada' : ''}`} role="status">
+            <i aria-hidden="true" /> {enPausa ? 'Grabación en pausa' : 'Se está grabando esta reunión'}
+          </span>
+        )}
+        {s.avisoGrabacion && !seGraba && <span className="sa-aviso-grab" role="status">{s.avisoGrabacion}</span>}
       </header>
 
       <div className={`sa-cuerpo${panel ? ' con-panel' : ''}`}>
@@ -229,12 +252,17 @@ function Llamada({ s, cliente, onCerrar }) {
             </div>
             {panel === 'chat'
               ? <SalaChat mensajes={s.mensajes} yoId={s.yo.id} aviso={s.avisoChat} onTexto={(t) => cliente.enviarTexto(t)} onCodigo={(l, c) => cliente.enviarCodigo(l, c)} />
-              : <Personas s={s} />}
+              : <Personas s={s} cliente={cliente} />}
           </aside>
         )}
       </div>
 
       {(s.avisoMedios) && <p className="sa-aviso flotante" role="status">{s.avisoMedios}</p>}
+      {s.avisoPalabra && <p className="sa-aviso flotante" role="status">{s.avisoPalabra}</p>}
+      {s.avisoSala && <p className="sa-aviso flotante" role="status">{s.avisoSala}</p>}
+      {s.esInvitado && manos > 0 && panel !== 'personas' && (
+        <p className="sa-aviso flotante" role="status">✋ {manos} {manos === 1 ? 'persona levantó' : 'personas levantaron'} la mano. <button type="button" className="sa-enlace" onClick={() => alternarPanel('personas')}>Ver</button></p>
+      )}
       {verFondo && (
         <div className="sa-popover" role="dialog" aria-label="Fondo de la cámara">
           <div className="sa-panel-cab"><strong>Fondo de la cámara</strong><button type="button" className="sa-enlace" onClick={() => setVerFondo(false)}>Cerrar</button></div>
@@ -243,6 +271,11 @@ function Llamada({ s, cliente, onCerrar }) {
       )}
 
       <footer className="sa-controles">
+        {s.esAsistente && (
+          <button type="button" className={`sa-control${s.mano ? ' activo' : ''}`} aria-pressed={s.mano} onClick={() => cliente.levantarMano()}>
+            <span aria-hidden="true">✋</span><span>{s.mano ? 'Bajar la mano' : 'Levantar la mano'}</span>
+          </button>
+        )}
         <button type="button" className={`sa-control${s.microfonoEncendido ? '' : ' apagado'}`} disabled={!s.tieneMicrofono} aria-pressed={s.microfonoEncendido} onClick={() => cliente.alternarMicrofono()}>
           <Icono nombre={s.microfonoEncendido ? 'mic' : 'micOff'} /><span>{s.microfonoEncendido ? 'Silenciar' : 'Activar'}</span>
         </button>
@@ -253,6 +286,18 @@ function Llamada({ s, cliente, onCerrar }) {
           onClick={() => (s.pantallaLocal ? cliente.dejarDeCompartir() : cliente.compartirPantalla())}>
           <Icono nombre="pantalla" /><span>{s.pantallaLocal ? 'Dejar de compartir' : 'Compartir'}</span>
         </button>
+        {s.puedeGrabar && s.grabando && (
+          <button type="button" className={`sa-control${s.grabacionPausada ? ' activo' : ''}`} aria-pressed={s.grabacionPausada}
+            onClick={() => (s.grabacionPausada ? cliente.reanudarGrabacion() : cliente.pausarGrabacion())}>
+            <Icono nombre={s.grabacionPausada ? 'reanudar' : 'pausa'} /><span>{s.grabacionPausada ? 'Reanudar' : 'Pausar'}</span>
+          </button>
+        )}
+        {s.puedeGrabar && (
+          <button type="button" className={`sa-control grabar${s.grabando ? ' activo' : ''}`} aria-pressed={s.grabando}
+            onClick={() => (s.grabando ? cliente.detenerGrabacion() : cliente.iniciarGrabacion())}>
+            <Icono nombre="grabar" /><span>{s.grabando ? 'Detener grabación' : 'Grabar'}</span>
+          </button>
+        )}
         <button type="button" className={`sa-control${verFondo ? ' activo' : ''}`} disabled={!s.tieneCamara} aria-expanded={verFondo} onClick={() => setVerFondo((v) => !v)}>
           <Icono nombre="fondo" /><span>Fondo</span>
         </button>
@@ -263,7 +308,7 @@ function Llamada({ s, cliente, onCerrar }) {
           <Icono nombre="personas" /><span>Personas</span>
         </button>
         <button type="button" className="sa-control salir" onClick={salir}>
-          <Icono nombre="salir" /><span>Salir</span>
+          <Icono nombre="salir" /><span>{s.esInvitado ? 'Terminar charla' : 'Salir'}</span>
         </button>
       </footer>
     </div>
@@ -272,7 +317,7 @@ function Llamada({ s, cliente, onCerrar }) {
 
 // HU-08: sala virtual de una sesión de mentoría o de una charla. Pantalla completa con videollamada, pantalla compartida,
 // fondo virtual y un chat donde se comparten mensajes y fragmentos de código. tipo: "sesion" o "charla".
-export default function Sala({ tipo, id, onCerrar }) {
+export default function Sala({ tipo, id, onCerrar, invitado = null }) {
   const { authFetch } = useAuth();
   // El cliente y su última instantánea van juntos: cada aviso del cliente trae las dos cosas.
   const [estado, setEstado] = useState(null);
@@ -280,10 +325,10 @@ export default function Sala({ tipo, id, onCerrar }) {
   const cliente = estado?.cliente ?? null;
 
   useEffect(() => {
-    const nuevo = new SalaCliente({ authFetch, tipo, id, alCambio: (snap) => setEstado({ snap, cliente: nuevo }) });
+    const nuevo = new SalaCliente({ authFetch, tipo, id, invitado, alCambio: (snap) => setEstado({ snap, cliente: nuevo }) });
     nuevo.iniciar();
     return () => nuevo.destruir();
-  }, [authFetch, tipo, id]);
+  }, [authFetch, tipo, id, invitado]);
 
   // Con la sala abierta no se debe desplazar la página de atrás.
   useEffect(() => {
@@ -294,14 +339,29 @@ export default function Sala({ tipo, id, onCerrar }) {
 
   return (
     <div className="sa" role="dialog" aria-modal="true" aria-label="Sala virtual">
-      {(!s || !cliente || s.fase === 'cargando') && <p className="sa-centro" role="status">Preparando la sala…</p>}
+      {(!s || !cliente || s.fase === 'cargando') && (
+        <div className="sa-centro" role="status">
+          <span className="sa-spinner" aria-hidden="true" />
+          <p>Preparando la sala…</p>
+        </div>
+      )}
       {s?.fase === 'error' && (
-        <div className="sa-centro">
+        <div className="sa-centro tarjeta">
+          <span className="sa-icono-estado error" aria-hidden="true">!</span>
+          <h2>No pudimos abrir la sala</h2>
           <p className="sa-error" role="alert">{s.error}</p>
-          <button type="button" className="sa-boton primario" onClick={onCerrar}>Cerrar</button>
+          <button type="button" className="sa-boton primario grande" onClick={onCerrar}>Cerrar</button>
         </div>
       )}
       {cliente && s && (s.fase === 'previa' || s.fase === 'conectando' || s.fase === 'cerrada') && <Previa s={s} cliente={cliente} onCerrar={onCerrar} />}
+      {s?.fase === 'finalizada' && (
+        <div className="sa-centro tarjeta">
+          <span className="sa-icono-estado ok" aria-hidden="true">✓</span>
+          <h2>La charla finalizó</h2>
+          <p>El invitado terminó su charla. ¡Gracias por participar! Si vuelve a entrar antes de la hora de fin, podrás regresar desde Charlas.</p>
+          <button type="button" className="sa-boton primario grande" onClick={onCerrar}>Volver a las charlas</button>
+        </div>
+      )}
       {cliente && s && s.fase === 'dentro' && <Llamada s={s} cliente={cliente} onCerrar={onCerrar} />}
     </div>
   );

@@ -7,7 +7,9 @@ const TIPOS = {
   SESION: 'Sesión',
   RECORDATORIO: 'Recordatorio',
   ANUNCIO: 'Anuncio',
-  CHARLA: 'Charla'
+  CHARLA: 'Charla',
+  FORO: 'Foro',
+  AMISTAD: 'Seguidores'
 };
 
 function formatearFecha(texto) {
@@ -43,7 +45,13 @@ export default function Notificaciones({ onCambio }) {
     return data;
   }, [authFetch]);
 
-  // Carga la lista cada vez que se cambia el filtro.
+  // Carga la lista cada vez que se cambia el filtro o llega un aviso nuevo en tiempo real.
+  const [llegada, setLlegada] = useState(0);
+  useEffect(() => {
+    const alLlegar = () => setLlegada((n) => n + 1);
+    window.addEventListener('techlink:notificacion', alLlegar);
+    return () => window.removeEventListener('techlink:notificacion', alLlegar);
+  }, []);
   useEffect(() => {
     let activo = true;
     (async () => {
@@ -58,7 +66,7 @@ export default function Notificaciones({ onCambio }) {
       }
     })();
     return () => { activo = false; };
-  }, [pedir, soloNoLeidas, onCambio]);
+  }, [pedir, soloNoLeidas, onCambio, llegada]);
 
   // Las preferencias se piden la primera vez que se abre su pestaña.
   useEffect(() => {
@@ -76,6 +84,17 @@ export default function Notificaciones({ onCambio }) {
     })();
     return () => { activo = false; };
   }, [pedir, pestana, preferencias]);
+
+  // Abre lo que el aviso señala (por ejemplo, la consulta del foro) y lo marca como leído.
+  function abrir(notificacion) {
+    const m = /^foro:(\d+)$/.exec(notificacion.enlace || '');
+    if (m) window.dispatchEvent(new CustomEvent('techlink:ir', { detail: { seccion: 'foro', consultaId: Number(m[1]) } }));
+    const sec = /^seccion:(\w+)$/.exec(notificacion.enlace || '');
+    if (sec) window.dispatchEvent(new CustomEvent('techlink:ir', { detail: { seccion: sec[1] } }));
+    const p = /^usuario:(\d+)$/.exec(notificacion.enlace || '');
+    if (p) window.dispatchEvent(new CustomEvent('techlink:perfil', { detail: { idUsuario: Number(p[1]) } }));
+    return leer(notificacion);
+  }
 
   async function leer(notificacion) {
     if (notificacion.leida) return;
@@ -163,7 +182,7 @@ export default function Notificaciones({ onCambio }) {
           <ul className="no-lista">
             {lista.map((n) => (
               <li key={n.id}>
-                <button type="button" className={`no-item${n.leida ? '' : ' sin-leer'}`} onClick={() => leer(n)}
+                <button type="button" className={`no-item${n.leida ? '' : ' sin-leer'}`} onClick={() => abrir(n)}
                   aria-label={`${n.leida ? '' : 'Sin leer. '}${n.titulo}`}>
                   <span className="no-punto" aria-hidden="true" />
                   <span className="no-cuerpo">
@@ -184,11 +203,11 @@ export default function Notificaciones({ onCambio }) {
       {pestana === 'preferencias' && (
         <section className="co-tarjeta">
           <h2 className="co-titulo-tarjeta">¿Cómo quieres recibir tus avisos?</h2>
-          <p className="co-sub">Elige, para cada tipo, si lo ves en la aplicación y si te llega un correo.</p>
+          <p className="co-sub">Elige qué avisos quieres recibir: desactiva con el check los que no te interesen.</p>
           {!preferencias && !error && <p className="co-vacio">Cargando…</p>}
           <ul className="no-prefs">
             {(preferencias ?? []).map((p) => (
-              <li key={p.tipo} className="no-pref">
+              <li key={p.tipo} className={`no-pref${p.correoDisponible ? '' : ' solo-app'}`}>
                 <div>
                   <strong>{p.nombre}</strong>
                   <p className="co-sub">{p.descripcion}</p>
@@ -197,11 +216,12 @@ export default function Notificaciones({ onCambio }) {
                   <input type="checkbox" checked={p.enApp} onChange={(e) => cambiarPreferencia(p.tipo, 'enApp', e.target.checked)} />
                   En la aplicación
                 </label>
-                <label className="no-interruptor">
-                  <input type="checkbox" checked={p.correo} disabled={!p.correoDisponible}
-                    onChange={(e) => cambiarPreferencia(p.tipo, 'correo', e.target.checked)} />
-                  {p.correoDisponible ? 'Por correo' : 'Por correo (no disponible)'}
-                </label>
+                {p.correoDisponible && (
+                  <label className="no-interruptor">
+                    <input type="checkbox" checked={p.correo} onChange={(e) => cambiarPreferencia(p.tipo, 'correo', e.target.checked)} />
+                    Por correo
+                  </label>
+                )}
               </li>
             ))}
           </ul>

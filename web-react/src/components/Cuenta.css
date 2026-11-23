@@ -42,8 +42,13 @@
 .cu-boton.primario:hover:not(:disabled) { background: var(--cu-marino-2); }
 .cu-boton:disabled { opacity: 0.55; cursor: default; }
 .cu-acciones { display: flex; justify-content: flex-end; }
-.cu-volver { align-self: flex-start; padding: 0.4rem 0; font-size: 14px; font-weight: 700; color: var(--cu-marino); background: transparent; border: 0; cursor: pointer; }
-.cu-volver:hover { text-decoration: underline; }
+/* Botón «Volver»: una píldora con una flecha que se desplaza un poco al pasar el cursor. */
+.cu-volver { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.1rem 0.5rem 0.8rem; font: inherit; font-size: 14px; font-weight: 700; color: #0b0b0c; background: #fff; border: 1px solid #d9d9dd; border-radius: 999px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); cursor: pointer; transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; }
+.cu-volver::before { content: ''; width: 18px; height: 18px; background: currentColor; transition: transform 0.15s; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5M11 6l-6 6 6 6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5M11 6l-6 6 6 6'/%3E%3C/svg%3E") center / contain no-repeat; }
+.cu-volver:hover { background: #f4f4f5; border-color: #0b0b0c; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+.cu-volver:hover::before { transform: translateX(-3px); }
+.cu-volver:focus-visible { outline: 2px solid #0b0b0c; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .cu-volver, .cu-volver::before { transition: none; } }
 
 /* Mi cuenta */
 .cu-foto-fila { flex-direction: row; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
@@ -68,7 +73,7 @@
 
 /* Mentores */
 .cu-estrellas { font-size: 16px; letter-spacing: 1px; color: #d6d6da; }
-.cu-estrellas .llena { color: var(--cu-marino); }
+.cu-estrellas .llena { color: #f5b301; }
 .cu-cal { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 14px; }
 .cu-sincal { font-size: 13px; color: var(--cu-gris); }
 .cu-datos { display: flex; gap: 1rem; font-size: 13px; color: var(--cu-gris); }
@@ -152,3 +157,77 @@
 .cu-pasos ol { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem; }
 .cu-pasos p { margin: 0; color: #5f6673; }
 .cu-pasos a { color: #122C4F; font-weight: 700; }
+
+/* ---------- Perfil estilo red social: portada, foto de perfil encima y frase de estado ---------- */
+.cu-perfil { padding: 0; gap: 0; overflow: visible; }
+.cu-portada { position: relative; height: clamp(150px, 26vw, 240px); background: center / cover no-repeat #1a1a1d; border-radius: 14px 14px 0 0; }
+.cu-portada.sin-imagen { background: linear-gradient(120deg, #0b0b0c 0%, #2b2b30 55%, #55555c 100%); }
+.cu-portada-acciones { position: absolute; right: 0.9rem; bottom: 0.9rem; display: flex; gap: 0.5rem; }
+.cu-boton-claro { padding: 0.5rem 0.95rem; font-size: 13px; font-weight: 700; color: #0b0b0c; background: #fff; border: 0; border-radius: 8px; cursor: pointer; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); }
+.cu-boton-claro:hover:not(:disabled) { background: #ececea; }
+.cu-boton-claro:disabled { opacity: 0.6; cursor: default; }
+.cu-perfil-cuerpo { display: flex; align-items: flex-start; gap: 1.25rem; padding: 0 1.5rem 1.25rem; flex-wrap: wrap; }
+.cu-perfil-avatar { position: relative; flex-shrink: 0; margin-top: -66px; padding: 4px; background: #fff; border-radius: 50%; }
+.cu-perfil-avatar .avatar-marco { display: grid; }
+.cu-camara { position: absolute; right: 6px; bottom: 6px; z-index: 4; display: grid; place-items: center; width: 34px; height: 34px; color: #0b0b0c; background: #e9e9e6; border: 2px solid #fff; border-radius: 50%; cursor: pointer; }
+.cu-camara:hover:not(:disabled) { background: #d9d9d5; }
+.cu-perfil-datos { flex: 1; min-width: 240px; padding-top: 0.9rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.cu-frase { position: relative; display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; max-width: 460px; }
+.cu-frase label { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cu-gris); }
+.cu-frase input { padding: 0.6rem 3.4rem 0.6rem 0.85rem; font: inherit; font-size: 14px; border: 1px solid var(--cu-linea); border-radius: 999px; background: #f6f6f4; }
+.cu-estado-campo .cu-contador { position: absolute; right: 0.9rem; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--cu-gris); }
+.cu-enlace { align-self: flex-start; padding: 0; font-size: 13px; font-weight: 600; color: var(--cu-gris); background: none; border: 0; text-decoration: underline; cursor: pointer; }
+@media (max-width: 560px) { .cu-perfil-cuerpo { padding: 0 1rem 1rem; } .cu-perfil-avatar { margin-top: -54px; } }
+
+/* Estado estilo GitHub: botoncito redondeado con emoji y frase */
+.cu-estado { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.45rem; max-width: 100%; margin-top: 0.4rem; padding: 0.4rem 0.9rem; font: inherit; font-size: 13px; color: #0b0b0c; background: #fff; border: 1px solid var(--cu-linea); border-radius: 999px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); cursor: pointer; overflow-wrap: anywhere; text-align: left; }
+.cu-estado:hover { background: #f3f3f1; }
+.cu-estado-editor { display: flex; flex-direction: column; gap: 0.45rem; max-width: 460px; margin-top: 0.5rem; padding: 0.9rem; background: #fff; border: 1px solid var(--cu-linea); border-radius: 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1); }
+.cu-estado-editor label { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cu-gris); }
+.cu-estado-campo { position: relative; display: flex; }
+.cu-estado-campo input { flex: 1; padding: 0.6rem 3.4rem 0.6rem 0.85rem; font: inherit; font-size: 14px; border: 1px solid var(--cu-linea); border-radius: 10px; background: #f6f6f4; }
+.cu-emojis { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.cu-emojis button { width: 34px; height: 34px; font-size: 18px; background: #f3f3f1; border: 0; border-radius: 8px; cursor: pointer; }
+.cu-emojis button:hover { background: #e4e4e1; }
+.cu-estado-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+
+/* Ser mentor: vista previa de la insignia y pasos numerados */
+.cu-hero-insignia { flex-direction: row; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+.cu-hero-insignia > div { flex: 1; min-width: 220px; }
+.cu-pasos2 { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; background: #f6f6f4; border-radius: 12px; }
+.cu-pasos2 h3 { margin: 0; font-size: 16px; }
+.cu-pasos2 ol { display: flex; flex-direction: column; gap: 0.7rem; margin: 0; padding: 0; list-style: none; }
+.cu-pasos2 li { display: flex; gap: 0.8rem; align-items: flex-start; }
+.cu-pasos2 li p { margin: 0.15rem 0 0; font-size: 13.5px; line-height: 1.45; color: var(--cu-gris); }
+.cu-num { flex: none; display: grid; place-items: center; width: 28px; height: 28px; font-size: 14px; font-weight: 800; color: #fff; background: #0b0b0c; border-radius: 50%; }
+.cu-importante { margin: 0; padding: 0.7rem 0.9rem; font-size: 13.5px; line-height: 1.45; background: #fff7e0; border: 1px solid #f0d88a; border-radius: 10px; }
+
+.cu-portada.publica { height: clamp(120px, 20vw, 190px); border-radius: 14px; margin-bottom: -0.4rem; }
+.cu-estado.fijo { cursor: default; margin-top: 0.2rem; }
+.cu-estado.fijo:hover { background: #fff; }
+
+.cu-zona-envoltura { position: relative; display: flex; }
+.cu-zona-envoltura .cu-zona { flex: 1; }
+.cu-zona-quitar { position: absolute; top: 0.6rem; right: 0.6rem; display: grid; place-items: center; width: 28px; height: 28px; font-size: 14px; color: #fff; background: #0b0b0c; border: 0; border-radius: 50%; cursor: pointer; }
+.cu-zona-quitar:hover { background: #3a3a3f; }
+
+/* Foto de perfil con menú y estado encima de la foto, como en GitHub */
+.cu-avatar-boton { padding: 0; background: none; border: 0; border-radius: 50%; cursor: pointer; }
+.cu-avatar-boton:disabled { opacity: 0.6; cursor: default; }
+.cu-menu-foto { position: absolute; top: calc(100% - 6px); left: 0; z-index: 10; display: flex; flex-direction: column; min-width: 220px; padding: 0.3rem; background: #fff; border: 1px solid var(--cu-linea); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
+.cu-menu-foto button { padding: 0.55rem 0.7rem; text-align: left; font: inherit; font-size: 14px; background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.cu-menu-foto button:hover { background: #f1f1ef; }
+.cu-menu-foto button.peligro { color: #b3261e; }
+.cu-estado.sobre-foto { position: absolute; right: -8px; bottom: 6px; z-index: 4; margin: 0; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cu-apodo { margin: 0; font-size: 16px; color: var(--cu-gris); }
+.cu-boton-gris { align-self: stretch; margin-top: 0.4rem; padding: 0.45rem 1rem; font: inherit; font-size: 14px; font-weight: 600; color: #0b0b0c; background: #f3f3f1; border: 1px solid var(--cu-linea); border-radius: 8px; cursor: pointer; }
+.cu-boton-gris:hover { background: #e8e8e5; }
+.cu-conteo { margin: 0.4rem 0 0; font-size: 13.5px; color: var(--cu-gris); }
+.cu-conteo button { padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.cu-conteo button:hover { text-decoration: underline; }
+.cu-conteo strong { color: #0b0b0c; }
+
+/* Pulido del encabezado del perfil */
+.cu-boton-gris { align-self: flex-start; padding: 0.4rem 1.1rem; }
+.cu-estado.sobre-foto { right: auto; left: 56%; bottom: 2px; padding: 0.3rem 0.75rem; font-size: 12px; max-width: 200px; }
+.cu-perfil-datos { padding-top: 1.2rem; }

@@ -164,7 +164,7 @@
 
 /* ---------- Versión con acento índigo: banner, datos, próxima sesión y mentores ---------- */
 .in { --in-acento: #111112; --in-marino: #0b0b0c; --in-lavanda: #b8b8b4; max-width: 1180px; }
-.in-hero { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; min-height: 200px; padding: 1.75rem clamp(1.25rem, 3vw, 2.25rem); margin-bottom: 1.1rem; overflow: hidden; color: #fff; background: var(--in-marino); border-radius: 22px; animation: in-entrar 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards; animation-delay: calc(var(--i, 0) * 90ms); }
+.in-hero { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; min-height: 200px; padding: 1.75rem clamp(1.25rem, 3vw, 2.25rem); margin-bottom: 1.1rem; overflow: hidden; color: #fff; background: linear-gradient(90deg, rgba(8, 8, 10, 0.97) 0%, rgba(8, 8, 10, 0.92) 42%, rgba(8, 8, 10, 0.55) 72%, rgba(8, 8, 10, 0.35) 100%), url('../assets/inicio-escritorio.webp') center right / cover no-repeat, var(--in-marino); border-radius: 22px; animation: in-entrar 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards; animation-delay: calc(var(--i, 0) * 90ms); }
 .in-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(60% 120% at 85% 100%, rgba(255, 255, 255, 0.10), transparent 70%); }
 .in-hero-texto { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 0.7rem; max-width: 440px; }
 .in-hero-texto p { margin: 0; font-size: 15px; line-height: 1.5; color: rgba(255, 255, 255, 0.8); }

@@ -3,6 +3,9 @@ import './Comunidad.css';
 import { useAuth } from '../auth/authContext';
 import AvisoLlama from './AvisoLlama';
 import ReportarModal from './ReportarModal';
+import Reacciones from './Reacciones';
+import Avatar from './Avatar';
+import PerfilUsuario from './PerfilUsuario';
 
 const MAX_TITULO = 150;
 const MAX_CONTENIDO = 2000;
@@ -14,9 +17,15 @@ const fechaHora = (iso) => {
 };
 
 function Autor({ autor, fecha }) {
+  const [verPerfil, setVerPerfil] = useState(false);
   return (
     <span className="co-autor">
-      <strong>{autor.nombre}</strong>
+      <button type="button" className="co-autor-boton" onClick={() => setVerPerfil(true)} title={`Ver el perfil de ${autor.nombre}`}>
+        <Avatar idUsuario={autor.id} iniciales={autor.nombre.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()}
+          tamano={28} insignia={autor.rol === 'MENTOR'} mostrarEstado />
+        <strong>{autor.nombre}</strong>
+      </button>
+      {verPerfil && <PerfilUsuario idUsuario={autor.id} onCerrar={() => setVerPerfil(false)} />}
       {autor.rol === 'MENTOR' && <span className="co-etiqueta mentor">Mentor</span>}
       <span className="co-sub">{fechaHora(fecha)}</span>
     </span>
@@ -106,7 +115,7 @@ function AccionesDe({ item, onEditar, onEliminar, onReportar }) {
 
 // Una respuesta principal con su hilo, como los comentarios de Instagram: las respuestas a ella quedan recogidas bajo "Ver N
 // respuestas" y se responde desde "Responder", sin llenar la página. Su autor puede editarla o eliminarla; los demás, reportarla.
-function Hilo({ respuesta, hijas, puedeMarcar, onMarcarUtil, onResponder, onEditar, onEliminar, onReportar }) {
+function Hilo({ respuesta, hijas, puedeMarcar, onMarcarUtil, onResponder, onEditar, onEliminar, onReportar, social, onReaccionar }) {
   const [abierto, setAbierto] = useState(false);
   const [escribiendo, setEscribiendo] = useState(false);
   const [texto, setTexto] = useState('');
@@ -176,6 +185,7 @@ function Hilo({ respuesta, hijas, puedeMarcar, onMarcarUtil, onResponder, onEdit
         )}
       </div>
 
+      <Reacciones datos={social?.[r.id]} onReaccionar={(tipo) => onReaccionar(r.id, tipo)} />
       <div className="co-hilo-acciones">
         <button type="button" className="co-enlace" onClick={() => abrirRespuesta('')}>Responder</button>
         {hijas.length > 0 && (
@@ -191,6 +201,7 @@ function Hilo({ respuesta, hijas, puedeMarcar, onMarcarUtil, onResponder, onEdit
           {hijas.map((h) => (
             <li key={h.id} className="co-hija">
               {cuerpo(h)}
+              <Reacciones datos={social?.[h.id]} onReaccionar={(tipo) => onReaccionar(h.id, tipo)} />
               <div className="co-pie">
                 <Autor autor={h.autor} fecha={h.fecha} />
                 <span className="co-hilo-acciones">
@@ -260,6 +271,41 @@ function DetalleConsulta({ id, onVolver }) {
   const [limite, setLimite] = useState(5); // respuestas principales visibles (el resto, con "Ver más")
   const [editando, setEditando] = useState(false); // se está editando la consulta
   const [reportando, setReportando] = useState(null); // { tipo: 'CONSULTA' | 'RESPUESTA', id, titulo } lo que se reporta
+  const [social, setSocial] = useState(null); // reacciones y guardado: { consulta, respuestas, guardada }
+  const totalRespuestas = consulta?.respuestas.length ?? -1;
+
+  // Las reacciones y el guardado se piden al abrir la consulta y cada vez que cambia el número de respuestas.
+  useEffect(() => {
+    if (totalRespuestas < 0) return undefined;
+    let activo = true;
+    (async () => {
+      try {
+        const response = await authFetch(`/api/foro/consultas/${id}/social`);
+        if (response.ok && activo) setSocial(await response.json());
+      } catch { /* sin reacciones: el foro funciona igual */ }
+    })();
+    return () => { activo = false; };
+  }, [authFetch, id, totalRespuestas]);
+
+  async function reaccionar(tipoObjeto, idObjeto, reaccion) {
+    try {
+      const ruta = tipoObjeto === 'consulta' ? `/api/foro/consultas/${idObjeto}/reaccion` : `/api/foro/respuestas/${idObjeto}/reaccion`;
+      const response = await authFetch(ruta, { method: 'PUT', body: JSON.stringify({ reaccion }) });
+      if (!response.ok) return;
+      const nuevo = await response.json();
+      setSocial((s) => (s ? (tipoObjeto === 'consulta'
+        ? { ...s, consulta: nuevo }
+        : { ...s, respuestas: { ...s.respuestas, [idObjeto]: nuevo } }) : s));
+    } catch { /* se queda como estaba */ }
+  }
+
+  async function alternarGuardado() {
+    const guardada = Boolean(social?.guardada);
+    try {
+      const response = await authFetch(`/api/foro/consultas/${id}/guardar`, { method: guardada ? 'DELETE' : 'POST' });
+      if (response.ok) setSocial((s) => (s ? { ...s, guardada: !guardada } : s));
+    } catch { /* se queda como estaba */ }
+  }
 
   useEffect(() => {
     let activo = true;
@@ -377,7 +423,7 @@ function DetalleConsulta({ id, onVolver }) {
 
   return (
     <div className="co">
-      <button type="button" className="co-volver" onClick={onVolver}>← Volver al foro</button>
+      <button type="button" className="co-volver" onClick={onVolver}>Volver al foro</button>
       {error && <p className="co-error" role="alert">{error}</p>}
       {!consulta && !error && <p className="co-vacio">Cargando consulta…</p>}
 
@@ -392,7 +438,11 @@ function DetalleConsulta({ id, onVolver }) {
               <>
                 <p className="co-texto">{consulta.contenido}{consulta.editada && <span className="co-editado"> (editado)</span>}</p>
                 <Autor autor={consulta.autor} fecha={consulta.fecha} />
+                <Reacciones datos={social?.consulta} onReaccionar={(tipo) => reaccionar('consulta', consulta.id, tipo)} />
                 <div className="co-hilo-acciones">
+                  <button type="button" className="co-enlace" aria-pressed={Boolean(social?.guardada)} onClick={alternarGuardado}>
+                    {social?.guardada ? '★ Guardada' : '☆ Guardar'}
+                  </button>
                   <AccionesDe item={{ esMia: consulta.esMia, id: consulta.id }} onEditar={() => setEditando(true)} onEliminar={eliminarConsulta}
                     onReportar={() => reportar('CONSULTA', consulta)} />
                 </div>
@@ -426,6 +476,8 @@ function DetalleConsulta({ id, onVolver }) {
                 onEditar={editarRespuesta}
                 onEliminar={eliminarRespuesta}
                 onReportar={reportar}
+                social={social?.respuestas}
+                onReaccionar={(idRespuesta, tipo) => reaccionar('respuesta', idRespuesta, tipo)}
               />
             ))}
           </ul>
@@ -454,7 +506,7 @@ function DetalleConsulta({ id, onVolver }) {
 
 // HU-17: foro de consultas por curso. Se pueden filtrar por curso o buscar por una palabra, publicar una consulta nueva y
 // responder las de otros. Lo que el administrador oculta (HU-54) no aparece aquí.
-export default function Foro() {
+export default function Foro({ consultaInicial = null }) {
   const { authFetch } = useAuth();
   const [cursos, setCursos] = useState([]);
   const [cursoId, setCursoId] = useState('');
@@ -463,8 +515,20 @@ export default function Foro() {
   const [consultas, setConsultas] = useState(null);
   const [error, setError] = useState('');
   const [redactando, setRedactando] = useState(false);
-  const [abierta, setAbierta] = useState(null);
+  const [abierta, setAbierta] = useState(consultaInicial);
   const [version, setVersion] = useState(0);
+  const [guardadas, setGuardadas] = useState([]); // los foros que guardé (panel de la derecha)
+
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      try {
+        const response = await authFetch('/api/foro/guardados');
+        if (response.ok && activo) setGuardadas(await response.json());
+      } catch { /* sin guardados: el panel queda vacío */ }
+    })();
+    return () => { activo = false; };
+  }, [authFetch, version]);
 
   useEffect(() => {
     let activo = true;
@@ -504,7 +568,8 @@ export default function Foro() {
   }
 
   return (
-    <div className="co">
+    <div className="co co-foro-grid">
+      <div className="co-foro-principal">
       {redactando ? (
         <NuevaConsulta
           cursos={cursos}
@@ -552,6 +617,25 @@ export default function Foro() {
           </li>
         ))}
       </ul>
+      </div>
+
+      <aside className="co-guardados" aria-label="Foros guardados">
+        <h3>★ Foros guardados</h3>
+        {guardadas.length === 0 ? (
+          <p className="co-sub">Aún no guardaste ninguno. Abre una consulta y pulsa «Guardar».</p>
+        ) : (
+          <ul>
+            {guardadas.map((g) => (
+              <li key={g.id}>
+                <button type="button" onClick={() => setAbierta(g.id)}>
+                  <strong>{g.titulo}</strong>
+                  <span>{g.curso} · {g.respuestas} {g.respuestas === 1 ? 'respuesta' : 'respuestas'}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </aside>
     </div>
   );
 }

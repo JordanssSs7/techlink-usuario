@@ -3,20 +3,20 @@ import { useAuth } from '../auth/authContext';
 import AgendarSesion from './AgendarSesion';
 import { CATEGORIAS, categoriaDe } from './cursosCategorias';
 import IconoCategoria from './IconoCategoria';
+import { hora12 } from './horas';
 
-const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const HORAS = Array.from({ length: 15 }, (_, i) => i + 7); // 07:00 a 21:00 (bloques de 1 hora)
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const HORAS = Array.from({ length: 17 }, (_, i) => i + 7); // 7:00 AM a 12:00 AM (bloques de 1 hora; el último termina a medianoche)
 const MAX_CURSOS = 5;
 const MAX_NOTA = 500;
 const ATAJOS = [
   { id: 'manana', nombre: 'Mañanas', desde: 7, hasta: 12 },
   { id: 'tarde', nombre: 'Tardes', desde: 13, hasta: 18 },
-  { id: 'noche', nombre: 'Noches', desde: 18, hasta: 22 }
+  { id: 'noche', nombre: 'Noches', desde: 18, hasta: 24 }
 ];
 
 const pad = (n) => String(n).padStart(2, '0');
 const hora = (n) => `${pad(n)}:00`;
-const recortar = (t) => String(t).slice(0, 5);
 const ordenCategoria = new Map(CATEGORIAS.map((c, i) => [c.id, i]));
 
 // Une las horas marcadas de cada día en rangos: [9,10,11] -> 09:00-12:00.
@@ -28,14 +28,14 @@ function aRangos(celdas) {
     while (i < marcadas.length) {
       let j = i;
       while (j + 1 < marcadas.length && marcadas[j + 1] === marcadas[j] + 1) j += 1;
-      rangos.push({ diaSemana: d + 1, horaInicio: hora(marcadas[i]), horaFin: hora(marcadas[j] + 1) });
+      rangos.push({ diaSemana: d + 1, horaInicio: hora(marcadas[i]), horaFin: marcadas[j] + 1 === 24 ? '23:59' : hora(marcadas[j] + 1) });
       i = j + 1;
     }
   });
   return rangos;
 }
 
-// Fechas de lunes a sábado de la semana actual, para mostrar el calendario como una semana real.
+// Fechas de lunes a domingo de la semana actual, para mostrar el calendario como una semana real.
 function semanaActual() {
   const hoy = new Date();
   const lunes = new Date(hoy);
@@ -403,7 +403,7 @@ export default function BuscarMentor() {
             <span className="bm-atajos-txt">Atajos:</span>
             {ATAJOS.map((a) => (
               <button key={a.id} type="button" className="bm-atajo" onClick={() => aplicarAtajo(a)}>
-                {a.nombre} <small>{pad(a.desde)}–{pad(a.hasta)} h</small>
+                {a.nombre} <small>{hora12(a.desde)}–{hora12(a.hasta)}</small>
               </button>
             ))}
             {totalHoras > 0 && (
@@ -423,7 +423,7 @@ export default function BuscarMentor() {
                 ))}
                 {HORAS.map((h) => (
                   <div key={h} className="bm-cal-fila" role="row">
-                    <div className="bm-cal-hora" role="rowheader">{hora(h)}</div>
+                    <div className="bm-cal-hora" role="rowheader">{hora12(h)}</div>
                     {DIAS.map((d, i) => {
                       const clave = `${i + 1}-${h}`;
                       const on = celdas.has(clave);
@@ -438,12 +438,12 @@ export default function BuscarMentor() {
                           role="gridcell"
                           className={`bm-celda${on ? ' marcada' : ''}${unirArriba ? ' une-arriba' : ''}${unirAbajo ? ' une-abajo' : ''}${semana[i].esHoy ? ' hoy' : ''}`}
                           aria-pressed={on}
-                          aria-label={`${d} ${hora(h)}`}
+                          aria-label={`${d} ${hora12(h)}`}
                           onPointerDown={(e) => empezarArrastre(e, clave)}
                           onPointerEnter={() => pasarPorCelda(clave)}
                           onClick={(e) => { if (e.detail === 0) marcarCelda(clave, !on); }}
                         >
-                          {on && !unirArriba && <span className="bm-celda-txt">{hora(h)}–{hora(fin)}</span>}
+                          {on && !unirArriba && <span className="bm-celda-txt">{hora12(h)}–{hora12(fin)}</span>}
                         </button>
                       );
                     })}
@@ -549,7 +549,7 @@ export default function BuscarMentor() {
                     <ul className="bm-chips horario">
                       {m.horariosEnComun.map((h) => (
                         <li key={`${h.diaSemana}-${h.horaInicio}`}>
-                          <strong>{(DIAS[h.diaSemana - 1] || String(h.diaSemana)).slice(0, 3)}</strong> {recortar(h.horaInicio)}–{recortar(h.horaFin)}
+                          <strong>{(DIAS[h.diaSemana - 1] || String(h.diaSemana)).slice(0, 3)}</strong> {hora12(h.horaInicio)}–{hora12(h.horaFin)}
                         </li>
                       ))}
                     </ul>

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import './Inicio.css';
 import { useAuth } from '../auth/authContext';
 import Avatar from './Avatar';
+import EstrellasNota from './EstrellasNota';
+import EtiquetaDisponible from './EtiquetaDisponible';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -38,6 +40,7 @@ function faltan(inicio, fin, ahora) {
 
 function hace(iso, ahora) {
   const min = Math.max(0, Math.round((ahora - new Date(iso)) / 60000));
+  if (Number.isNaN(min)) return '';
   if (min < 1) return 'ahora';
   if (min < 60) return `hace ${min} min`;
   const h = Math.round(min / 60);
@@ -299,11 +302,12 @@ export default function InicioEstudiante({ primerNombre, irA }) {
             {mentores.slice(0, 3).map((m, i) => (
               <li key={m.idMentor} style={{ '--i': i }}>
                 <div className="in-mentor-carta">
-                  <Avatar idUsuario={m.idUsuario} tieneFoto={m.tieneFoto} iniciales={iniciales(m)} tamano={64} />
+                  <Avatar idUsuario={m.idUsuario} tieneFoto={m.tieneFoto} iniciales={iniciales(m)} tamano={64} insignia mostrarEstado />
                   <div className="in-mentor-datos">
                     <strong>{m.nombres} {m.apellidos !== '-' ? m.apellidos : ''}</strong>
                     <small>{m.especialidad || 'Mentor'}</small>
-                    <small className="in-nota">{m.promedio != null ? <>★ {Number(m.promedio).toFixed(1)} ({m.totalCalificaciones} {m.totalCalificaciones === 1 ? 'clase' : 'clases'})</> : 'Nuevo mentor'}</small>
+                    <EstrellasNota valor={m.promedio} total={m.totalCalificaciones} />
+                    <EtiquetaDisponible idUsuario={m.idUsuario} />
                     <button type="button" className="in-ver-perfil" onClick={() => irA('mentores')}>Ver perfil →</button>
                   </div>
                 </div>
@@ -365,7 +369,7 @@ export default function InicioEstudiante({ primerNombre, irA }) {
                   <span className="in-punto" aria-label={n.leida ? 'leído' : 'sin leer'} />
                   <span className="in-fila-texto">
                     <strong>{n.titulo}</strong>
-                    <small>{hace(n.fechaCreacion, ahora)}</small>
+                    <small>{hace(n.fecha, ahora)}</small>
                   </span>
                 </li>
               ))}

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import './LoginForm.css';
 import './PerfilMentor.css';
 import { useAuth } from '../auth/authContext';
+import { hora12 } from './horas';
+import SelectorHora from './SelectorHora';
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -75,6 +77,7 @@ export default function PerfilMentor() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
+  const [sinGuardar, setSinGuardar] = useState(false); // hay cambios (por ejemplo, un horario quitado) que aún no se guardaron
 
   // Al abrir: catálogo de cursos y perfil que ya tenía guardado.
   useEffect(() => {
@@ -112,7 +115,7 @@ export default function PerfilMentor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const marcarCambio = () => { setGuardado(false); setErrors({}); };
+  const marcarCambio = () => { setGuardado(false); setSinGuardar(true); setErrors({}); };
 
   const alternarCurso = (id) => {
     marcarCambio();
@@ -126,7 +129,7 @@ export default function PerfilMentor() {
 
   const agregarHorario = () => {
     marcarCambio();
-    setHorarios((actuales) => [...actuales, { diaSemana: 1, horaInicio: '09:00', horaFin: '11:00', activo: true }]);
+    setHorarios((actuales) => [...actuales, { diaSemana: '', horaInicio: '', horaFin: '', activo: true }]);
   };
 
   const quitarHorario = (indice) => {
@@ -138,7 +141,8 @@ export default function PerfilMentor() {
   const validar = () => {
     const nuevos = {};
     horarios.forEach((h, i) => {
-      if (!h.horaInicio || !h.horaFin) nuevos[`disponibilidad[${i}].horaFin`] = 'Indica la hora de inicio y de fin.';
+      if (!h.diaSemana) nuevos[`disponibilidad[${i}].horaFin`] = 'Elige el día y las horas de este horario.';
+      else if (!h.horaInicio || !h.horaFin) nuevos[`disponibilidad[${i}].horaFin`] = 'Indica la hora de inicio y de fin.';
       else if (h.horaFin <= h.horaInicio) nuevos[`disponibilidad[${i}].horaFin`] = 'La hora de fin debe ser posterior a la de inicio.';
     });
     return nuevos;
@@ -162,6 +166,7 @@ export default function PerfilMentor() {
       });
       if (response.ok) {
         setGuardado(true);
+        setSinGuardar(false);
         return;
       }
       const data = await response.json().catch(() => ({}));
@@ -255,20 +260,13 @@ export default function PerfilMentor() {
                       value={h.diaSemana}
                       onChange={(e) => cambiarHorario(i, { diaSemana: Number(e.target.value) })}
                     >
+                      <option value="" disabled>Elige un día</option>
                       {DIAS.map((dia, d) => <option key={dia} value={d + 1}>{dia}</option>)}
                     </select>
-                    <input
-                      type="time"
-                      aria-label={`Hora de inicio del horario ${i + 1}`}
-                      value={h.horaInicio}
-                      onChange={(e) => cambiarHorario(i, { horaInicio: e.target.value })}
-                    />
-                    <input
-                      type="time"
-                      aria-label={`Hora de fin del horario ${i + 1}`}
-                      value={h.horaFin}
-                      onChange={(e) => cambiarHorario(i, { horaFin: e.target.value })}
-                    />
+                    <SelectorHora etiqueta={`Hora de inicio del horario ${i + 1}`} valor={h.horaInicio}
+                      onChange={(v) => cambiarHorario(i, { horaInicio: v })} />
+                    <SelectorHora etiqueta={`Hora de fin del horario ${i + 1}`} valor={h.horaFin}
+                      onChange={(v) => cambiarHorario(i, { horaFin: v })} />
                     <label className="mentor-activo">
                       <input
                         type="checkbox"
@@ -278,6 +276,9 @@ export default function PerfilMentor() {
                       Activo
                     </label>
                     <button type="button" className="mentor-boton-chico" onClick={() => quitarHorario(i)}>Quitar</button>
+                    {h.diaSemana && h.horaInicio && h.horaFin && (
+                      <span className="mentor-hora12">{DIAS[h.diaSemana - 1]}: de {hora12(h.horaInicio)} a {hora12(h.horaFin)}</span>
+                    )}
                     {errors[`disponibilidad[${i}].horaFin`] && (
                       <span className="login-error mentor-horario-error">{errors[`disponibilidad[${i}].horaFin`]}</span>
                     )}
@@ -290,6 +291,7 @@ export default function PerfilMentor() {
                 <p className="login-hint">Solo los horarios marcados como activos se muestran a los estudiantes.</p>
               </fieldset>
 
+              {sinGuardar && <p className="mentor-sin-guardar" role="status">Tienes cambios sin guardar. Pulsa «Guardar perfil» para que queden en tu cuenta.</p>}
               <button type="submit" className="login-submit" disabled={guardando}>
                 {guardando ? 'Guardando...' : 'Guardar perfil'}
               </button>

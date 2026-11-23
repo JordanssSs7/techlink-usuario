@@ -103,7 +103,17 @@
 /* Contenido */
 .pt-zona { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .pt-fila { flex: 1; display: flex; align-items: flex-start; }
-.pt-buscar { max-width: 980px; }
+.pt-buscar { position: relative; isolation: isolate; max-width: 980px; }
+/* Imagen decorativa arriba a la derecha, detrás del encabezado: se funde con el fondo por la izquierda y por abajo. */
+.pt-buscar::before {
+  content: ''; position: absolute; z-index: -1; top: -1.5rem; right: -1rem; width: min(62%, 560px); aspect-ratio: 3 / 2;
+  background: url('../assets/banner-buscar.webp') right top / contain no-repeat; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 38%), linear-gradient(to bottom, #000 62%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent 0%, #000 38%), linear-gradient(to bottom, #000 62%, transparent 100%);
+  mask-composite: intersect;
+}
+@media (max-width: 760px) { .pt-buscar::before { width: 80%; opacity: 0.45; top: -0.5rem; } }
 .pt-buscar h1 { margin-bottom: 1.25rem; }
 .pt-eyebrow {
   display: block; margin-bottom: 0.45rem !important;
@@ -325,7 +335,7 @@
   overflow-x: auto; border: 1px solid var(--linea); border-radius: 16px; background: var(--blanco);
 }
 .bm-cal {
-  display: grid; grid-template-columns: 58px repeat(6, minmax(64px, 1fr));
+  display: grid; grid-template-columns: 58px repeat(7, minmax(54px, 1fr));
   min-width: 480px; padding: 0 0.5rem 0.5rem 0;
   user-select: none; -webkit-user-select: none;
 }
@@ -661,3 +671,18 @@
 .pt h2, .pt h3, .pt h4 { font-family: 'Sora', 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
 .pt [class$="-titulo"], .pt [class$="-titulo-tarjeta"], .pt [class$="-rango"], .pt [class$="-subtitulo"] { font-family: 'Sora', 'DM Sans', system-ui, sans-serif; letter-spacing: -0.02em; }
 .pt input, .pt select, .pt textarea, .pt button { font-family: 'DM Sans', system-ui, sans-serif; }
+
+/* Pestañas dentro de «Buscar mentor» */
+.pt-pestanas { display: flex; gap: 0.4rem; margin: 0 0 1.1rem; border-bottom: 1px solid #e3e3df; }
+.pt-pestanas button { padding: 0.6rem 1rem; font: inherit; font-size: 14px; font-weight: 600; color: #6b6b72; background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; }
+.pt-pestanas button.activa { color: #0b0b0c; border-bottom-color: #0b0b0c; }
+
+/* Bloques de horas al agendar: una línea cada uno (con AM/PM son más largos) */
+.ag-bloques { flex-wrap: wrap; }
+.ag-bloques .bm-primario, .ag-bloques .bm-secundario { white-space: nowrap; border-radius: 999px; padding: 0.6rem 1.1rem; }
+
+/* Agendar: elegir desde y hasta qué hora dentro de la franja del mentor */
+.ag-rango { display: flex; flex-direction: column; gap: 0.5rem; }
+.ag-rango-campos { display: flex; flex-wrap: wrap; gap: 1rem; }
+.ag-rango-campos > div { display: flex; flex-direction: column; gap: 0.3rem; }
+.ag-rango select { min-width: 160px; padding: 0.55rem 0.8rem; font: inherit; border: 1px solid #d9d9d4; border-radius: 10px; background: #fff; }

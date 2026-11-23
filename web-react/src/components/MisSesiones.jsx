@@ -11,14 +11,16 @@ const Sala = lazy(() => import('./sala/Sala'));
 
 const FILTROS = [
   { valor: '', texto: 'Todas' },
+  { valor: 'PENDIENTE', texto: 'Pendientes' },
   { valor: 'PROGRAMADA', texto: 'Programadas' },
   { valor: 'COMPLETADA', texto: 'Completadas' },
   { valor: 'CANCELADA', texto: 'Canceladas' }
 ];
-const ETIQUETA_ESTADO = { PROGRAMADA: 'Programada', COMPLETADA: 'Completada', CANCELADA: 'Cancelada' };
+const ETIQUETA_ESTADO = { PENDIENTE: 'Pendiente', PROGRAMADA: 'Programada', COMPLETADA: 'Completada', CANCELADA: 'Cancelada' };
 const MAX_NOTA = 2000;
 const MAX_COMENTARIO = 500;
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const hora = (t) => String(t).slice(0, 5);
 const fechaLarga = (iso) => {
   const [a, m, d] = iso.split('-').map(Number);
@@ -32,6 +34,32 @@ function Estrellas({ valor }) {
       {[1, 2, 3, 4, 5].map((n) => <span key={n} className={n <= valor ? 'llena' : ''} aria-hidden="true">★</span>)}
     </span>
   );
+}
+
+// El video de la clase grabada. La dirección se pide con un ticket temporal porque el <video> no puede mandar el token de sesión.
+function VerGrabacion({ sesion }) {
+  const { authFetch } = useAuth();
+  const [url, setUrl] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      try {
+        const response = await authFetch(`/api/sesiones/${sesion.id}/grabacion/ticket`, { method: 'POST' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || '');
+        if (activo) setUrl(`${API_URL}${data.url}`);
+      } catch (e) {
+        if (activo) setError(e.message || 'No se pudo cargar la grabación.');
+      }
+    })();
+    return () => { activo = false; };
+  }, [authFetch, sesion.id]);
+
+  if (error) return <p className="ms-error" role="alert">{error}</p>;
+  if (!url) return <p className="ms-pista">Cargando la grabación…</p>;
+  return <video className="ms-video" src={url} controls autoPlay playsInline />;
 }
 
 // Ventana emergente dentro de la página (no usa los cuadros del navegador). Escape o tocar el fondo la cierra.
@@ -60,7 +88,7 @@ function Modal({ titulo, ancho = 'normal', onCerrar, children }) {
 
 // HU-20: historial de sesiones. Estudiante: calificar (HU-09), cancelar y reprogramar (HU-19), leer notas (HU-21).
 // Mentor: escribir y editar las notas de cada sesión (HU-21).
-export default function MisSesiones() {
+export default function MisSesiones({ salaInicial = null }) {
   const { authFetch, usuario } = useAuth();
   const esMentor = usuario.rol === 'MENTOR';
 
@@ -68,8 +96,26 @@ export default function MisSesiones() {
   const [sesiones, setSesiones] = useState(null);
   const [error, setError] = useState('');
   const [accion, setAccion] = useState(null); // { tipo: 'calificar' | 'cancelar' | 'reprogramar' | 'nota', sesion }
-  const [salaId, setSalaId] = useState(null); // HU-08: id de la sesión cuya sala virtual está abierta
+  const [salaId, setSalaId] = useState(salaInicial); // HU-08: id de la sesión cuya sala virtual está abierta (o la que abrió un enlace)
   const [aviso, setAviso] = useState('');
+
+  // El mentor acepta o rechaza una solicitud de sesión.
+  async function responderSolicitud(sesion, decision) {
+    setAviso('');
+    setError('');
+    try {
+      const response = await authFetch(`/api/sesiones/${sesion.id}/${decision}`, { method: 'PUT' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setError(data.error || 'No se pudo responder la solicitud.');
+      } else {
+        setAviso(decision === 'aceptar' ? 'Sesión aceptada. Ya aparece en tu calendario y en la sala.' : 'Solicitud rechazada.');
+      }
+    } catch {
+      setError('No se pudo conectar con el servidor.');
+    }
+    cargar();
+  }
 
   // "version" sube cada vez que hay que volver a pedir el historial (por ejemplo, después de cancelar o calificar).
   const [version, setVersion] = useState(0);
@@ -168,12 +214,23 @@ export default function MisSesiones() {
                 </details>
               )}
 
+              {s.estado === 'PENDIENTE' && (
+                <p className="ms-pista">{esMentor
+                  ? 'Un estudiante te pidió esta sesión. Si la aceptas, se agrega a tus sesiones y a tu calendario.'
+                  : 'Esperando que el mentor la acepte. Te avisaremos apenas responda.'}</p>
+              )}
               <div className="ms-acciones">
+                {esMentor && s.estado === 'PENDIENTE' && (
+                  <>
+                    <button type="button" className="ms-boton primario" onClick={() => responderSolicitud(s, 'aceptar')}>Aceptar</button>
+                    <button type="button" className="ms-boton peligro" onClick={() => responderSolicitud(s, 'rechazar')}>Rechazar</button>
+                  </>
+                )}
+                {!esMentor && s.estado === 'PENDIENTE' && (
+                  <button type="button" className="ms-boton peligro" onClick={() => setAccion({ tipo: 'cancelar', sesion: s })}>Retirar solicitud</button>
+                )}
                 {s.estado === 'PROGRAMADA' && (
                   <button type="button" className="ms-boton primario" onClick={() => setSalaId(s.id)}>Entrar a la sala</button>
-                )}
-                {s.estado === 'PROGRAMADA' && s.enlaceReunion && (
-                  <a className="ms-boton" href={s.enlaceReunion} target="_blank" rel="noreferrer">Abrir enlace de la reunión</a>
                 )}
                 {s.puedeCalificar && (
                   <button type="button" className="ms-boton primario" onClick={() => setAccion({ tipo: 'calificar', sesion: s })}>Calificar</button>
@@ -185,7 +242,10 @@ export default function MisSesiones() {
                   </>
                 )}
                 <button type="button" className="ms-boton" onClick={() => setAccion({ tipo: 'reportar', sesion: s })}>Reportar</button>
-                {s.estado !== 'CANCELADA' && (esMentor || s.recursos > 0) && (
+                {s.tieneGrabacion && (
+                  <button type="button" className="ms-boton primario" onClick={() => setAccion({ tipo: 'grabacion', sesion: s })}>Ver grabación</button>
+                )}
+                {s.estado !== 'CANCELADA' && s.estado !== 'PENDIENTE' && (esMentor || s.recursos > 0) && (
                   <button type="button" className="ms-boton" onClick={() => setAccion({ tipo: 'recursos', sesion: s })}>
                     Recursos{s.recursos > 0 ? ` (${s.recursos})` : ''}
                   </button>
@@ -233,6 +293,14 @@ export default function MisSesiones() {
           subtitulo={`${accion.sesion.curso || 'Mentoría'} con ${accion.sesion.contraparte} · ${fechaLarga(accion.sesion.fecha)}`}
           onCerrar={cerrar}
         />
+      )}
+      {accion?.tipo === 'grabacion' && (
+        <Modal titulo="Clase grabada" ancho="ancho" onCerrar={cerrar}>
+          <VerGrabacion sesion={accion.sesion} />
+          <div className="ms-modal-botones">
+            <button type="button" className="ms-boton" onClick={cerrar}>Cerrar</button>
+          </div>
+        </Modal>
       )}
       {accion?.tipo === 'recursos' && (
         <Modal titulo="Recursos de la sesión" ancho="ancho" onCerrar={cerrar}>

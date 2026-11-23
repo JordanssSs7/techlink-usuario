@@ -1,0 +1,20 @@
+/* Marco del avatar: aro dorado de mentor (la imagen del aro tiene el círculo en el centro y la insignia arriba a la derecha) y punto de
+   "en línea". --t es el tamaño de la foto. */
+.avatar-marco { position: relative; display: inline-grid; place-items: center; flex-shrink: 0; width: var(--t); height: var(--t); }
+.avatar-marco.con-insignia { width: calc(var(--t) * 1.1); height: calc(var(--t) * 1.1); }
+/* El aro va por encima de la foto y rodea el círculo; el diámetro interior del aro es ~90 % del cuadro. */
+.avatar-marco.con-insignia::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: url('../assets/insignia-mentor.png') center / 100% 100% no-repeat; }
+.avatar-marco.con-insignia .avatar-punto { z-index: 3; }
+.avatar-punto { position: absolute; right: 0; bottom: 0; width: max(10px, calc(var(--t) * 0.24)); height: max(10px, calc(var(--t) * 0.24)); background: #22c55e; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); animation: avatar-latido 2.4s ease-out infinite; }
+@keyframes avatar-latido { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); } 70%, 100% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } }
+@media (prefers-reduced-motion: reduce) { .avatar-punto { animation: none; } }
+
+/* Etiqueta "Disponible" junto al nombre de quien está conectado */
+.etiqueta-disponible { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.1rem 0.6rem; font-size: 12px; font-weight: 700; color: #14532d; background: #dcfce7; border-radius: 999px; }
+.etiqueta-disponible::before { content: ''; width: 7px; height: 7px; background: #22c55e; border-radius: 50%; }
+
+/* Estrellas de la calificación: la capa dorada se recorta según la nota */
+.estrellas-nota { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 13px; }
+.estrellas-nota .estrellas { position: relative; display: inline-block; font-size: 15px; line-height: 1; letter-spacing: 1px; color: #d9d9d4; }
+.estrellas-nota .estrellas > span { position: absolute; top: 0; left: 0; overflow: hidden; white-space: nowrap; color: #f2b01e; }
+.estrellas-nota small { color: #6b6b72; }

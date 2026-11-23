@@ -5,6 +5,8 @@ import InicioEstudiante from './InicioEstudiante';
 import BuscarMentor from './BuscarMentor';
 import MisSesiones from './MisSesiones';
 import Foro from './Foro';
+import { tomarSalaPendiente } from '../enlaceSala';
+import PerfilDesdeAviso from './PerfilDesdeAviso';
 import Charlas from './Charlas';
 import Seguimiento from './Seguimiento';
 import Calendario from './Calendario';
@@ -57,11 +59,6 @@ const SECCIONES = [
     icono: <><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7.5 2 7.5H4S6 15 6 9" /><path d="M10 20a2 2 0 0 0 4 0" /></>
   },
   {
-    id: 'mentores',
-    titulo: 'Mentores',
-    icono: <><path d="M8 21h8M12 17v4" /><path d="M7 4h10v4a5 5 0 0 1-10 0z" /><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" /></>
-  },
-  {
     id: 'postular',
     titulo: 'Ser mentor',
     icono: <><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" /></>
@@ -88,7 +85,7 @@ const GRUPOS = [
   { titulo: '', ids: ['inicio'] },
   { titulo: 'Mentorías', ids: ['buscar', 'sesiones', 'calendario'] },
   { titulo: 'Mi avance', ids: ['progreso', 'charlas'] },
-  { titulo: 'Comunidad', ids: ['mentores', 'foro', 'postular'] }
+  { titulo: 'Comunidad', ids: ['foro', 'postular'] }
 ];
 const INFERIOR = ['notificaciones', 'ayuda', 'cuenta'];
 const porId = (id) => SECCIONES.find((x) => x.id === id);
@@ -107,7 +104,23 @@ function Logo({ size = 26 }) {
 export default function PortalEstudiante() {
   const { usuario, logout } = useAuth();
   const fotoPropia = useFotoPropia();
-  const [seccion, setSeccion] = useState('inicio');
+  const [salaPendiente] = useState(() => tomarSalaPendiente()); // sala que abrió un enlace de sesión o de charla
+  const salaInicial = salaPendiente?.tipo === 'sesion' ? salaPendiente.id : null;
+  const charlaInicial = salaPendiente?.tipo === 'charla' ? salaPendiente.id : null;
+  const [seccion, setSeccion] = useState(salaInicial ? 'sesiones' : charlaInicial ? 'charlas' : 'inicio');
+  const [vistaBuscar, setVistaBuscar] = useState('buscar'); // dentro de «Buscar mentor»: 'buscar' o 'ranking'
+  const [irConsulta, setIrConsulta] = useState(null); // consulta del foro que abrió un aviso
+
+  // Un aviso (por ejemplo, «reaccionaron a tu respuesta») lleva directo a su consulta del foro.
+  useEffect(() => {
+    const ir = (e) => {
+      setSeccion(e.detail.seccion);
+      setIrConsulta(e.detail.consultaId ?? null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('techlink:ir', ir);
+    return () => window.removeEventListener('techlink:ir', ir);
+  }, []);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const { pendientes, poner: ponerPendientes } = useNotificacionesPendientes();
 
@@ -124,6 +137,11 @@ export default function PortalEstudiante() {
   }, [menuAbierto]);
 
   const irA = (id) => {
+    // «Mentores» ahora vive dentro de «Buscar mentor», en la pestaña del ranking.
+    if (id === 'mentores') {
+      setVistaBuscar('ranking');
+      id = 'buscar';
+    }
     setSeccion(id);
     setMenuAbierto(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -219,15 +237,13 @@ export default function PortalEstudiante() {
             <section key="buscar" className="pt-seccion pt-buscar">
               <p className="pt-eyebrow">Mentorías</p>
               <h1>Buscar <span>mentor</span></h1>
-              <BuscarMentor />
-            </section>
-          )}
-          {seccion === 'mentores' && (
-            <section key="mentores" className="pt-seccion">
-              <p className="pt-eyebrow">Comunidad</p>
-              <h1>Mentores</h1>
-              <p className="pt-intro">El ranking de mentores por calificación y horas dictadas. Abre un perfil para ver sus cursos, comentarios e insignias.</p>
-              <MentoresRanking />
+              <div className="pt-pestanas" role="tablist" aria-label="Cómo buscar mentores">
+                <button type="button" role="tab" aria-selected={vistaBuscar === 'buscar'} className={vistaBuscar === 'buscar' ? 'activa' : ''}
+                  onClick={() => setVistaBuscar('buscar')}>Buscar por curso y horario</button>
+                <button type="button" role="tab" aria-selected={vistaBuscar === 'ranking'} className={vistaBuscar === 'ranking' ? 'activa' : ''}
+                  onClick={() => setVistaBuscar('ranking')}>Ranking de mentores</button>
+              </div>
+              {vistaBuscar === 'buscar' ? <BuscarMentor /> : <MentoresRanking />}
             </section>
           )}
           {seccion === 'postular' && (
@@ -251,7 +267,7 @@ export default function PortalEstudiante() {
               <p className="pt-eyebrow">Comunidad</p>
               <h1>Charlas <span>virtuales</span></h1>
               <p className="pt-intro">Te recomendamos charlas según tus intereses y tus cursos críticos. Inscríbete y la verás en tu calendario.</p>
-              <Charlas />
+              <Charlas salaInicial={charlaInicial} />
             </section>
           )}
           {seccion === 'calendario' && (
@@ -267,7 +283,7 @@ export default function PortalEstudiante() {
               <p className="pt-eyebrow">Comunidad</p>
               <h1>Foro de <span>consultas</span></h1>
               <p className="pt-intro">Pregunta tus dudas por curso y ayuda a otros con lo que sabes. Quien pregunta puede marcar la respuesta que le sirvió.</p>
-              <Foro />
+              <Foro key={irConsulta ?? 'lista'} consultaInicial={irConsulta} />
             </section>
           )}
           {seccion === 'notificaciones' && (
@@ -299,7 +315,7 @@ export default function PortalEstudiante() {
               <p className="pt-eyebrow">Mentorías</p>
               <h1>Mis <span>sesiones</span></h1>
               <p className="pt-intro">Tu historial de sesiones: califica las que terminaron, y cancela o reprograma las próximas.</p>
-              <MisSesiones />
+              <MisSesiones salaInicial={salaInicial} />
             </section>
           )}
         </div>
@@ -309,6 +325,7 @@ export default function PortalEstudiante() {
 
       </div>
 
+      <PerfilDesdeAviso />
       <AsistenteChat contexto={seccion} rol="ESTUDIANTE" />
     </div>
   );
