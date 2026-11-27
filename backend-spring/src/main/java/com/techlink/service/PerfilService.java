@@ -84,9 +84,8 @@ public class PerfilService {
         Map<String, String> errores = new LinkedHashMap<>();
 
         String descripcion = peticion.descripcion() == null ? "" : peticion.descripcion().trim();
-        if (descripcion.isEmpty()) {
-            errores.put("descripcion", "La descripción es obligatoria.");
-        } else if (descripcion.length() > MAX_DESCRIPCION) {
+        // La descripción es opcional: vacía se guarda como «sin descripción».
+        if (descripcion.length() > MAX_DESCRIPCION) {
             errores.put("descripcion", "La descripción no puede superar los " + MAX_DESCRIPCION + " caracteres.");
         }
 
@@ -120,7 +119,7 @@ public class PerfilService {
         if (peticion.apodo() != null) {
             usuario.setApodo(apodo.isEmpty() ? null : apodo);
         }
-        usuario.setDescripcion(descripcion);
+        usuario.setDescripcion(descripcion.isEmpty() ? null : descripcion);
         if (peticion.frase() != null) {
             usuario.setFrase(frase.isEmpty() ? null : frase);
         }
@@ -134,6 +133,22 @@ public class PerfilService {
             estudiante.setCiclo(ciclo);
             estudianteRepository.save(estudiante);
         }
+        return aRespuesta(usuario);
+    }
+
+    // Guarda solo el estado (la frase con emoji): sirve aunque la descripción del perfil todavía esté vacía. Una frase vacía lo quita.
+    @Transactional
+    public PerfilResponse actualizarEstado(Integer usuarioId, String fraseCruda) {
+        Usuario usuario = buscarUsuario(usuarioId);
+        String frase = fraseCruda == null ? "" : fraseCruda.trim().replaceAll("\\s+", " ");
+        if (frase.codePointCount(0, frase.length()) > MAX_FRASE) {
+            throw new DatosInvalidosException("frase", "Tu estado no puede superar los " + MAX_FRASE + " caracteres.");
+        }
+        if (!frase.isEmpty()) {
+            ModeracionTexto.exigirLimpio(frase);
+        }
+        usuario.setFrase(frase.isEmpty() ? null : frase);
+        usuarioRepository.save(usuario);
         return aRespuesta(usuario);
     }
 

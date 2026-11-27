@@ -83,12 +83,11 @@ class PerfilServiceTest {
     }
 
     @Test
-    void laDescripcionEsObligatoria() {
+    void laDescripcionEsOpcional() {
         for (String vacia : new String[]{null, "", "   "}) {
-            DatosInvalidosException e = invalido(() -> servicio.actualizar(1, new PerfilRequest(vacia, 3, List.of())));
-            assertEquals("La descripción es obligatoria.", e.getCampos().get("descripcion"));
+            servicio.actualizar(1, new PerfilRequest(vacia, 3, List.of()));
+            assertNull(usuario.getDescripcion());
         }
-        verify(usuarioRepository, never()).save(any());
     }
 
     @Test
@@ -125,8 +124,7 @@ class PerfilServiceTest {
         DatosInvalidosException e = invalido(() -> servicio.actualizar(1, new PerfilRequest(" ", 9,
                 List.of("a", "b", "c", "d", "e", "f", "g", "h", "ii"))));
 
-        assertEquals(3, e.getCampos().size());
-        assertTrue(e.getCampos().containsKey("descripcion"));
+        assertEquals(2, e.getCampos().size()); // la descripción vacía ya no es un error
         assertTrue(e.getCampos().containsKey("ciclo"));
         assertTrue(e.getCampos().get("intereses").contains("entre 2 y 50"));
     }

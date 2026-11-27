@@ -44,6 +44,13 @@ public class PerfilController {
         return ResponseEntity.ok(perfilService.actualizar(idDe(jwt), request));
     }
 
+    // El estado (frase con emoji) se guarda aparte: no exige la descripción ni los demás datos del perfil.
+    @PutMapping("/perfil/estado")
+    public ResponseEntity<PerfilResponse> actualizarEstado(@AuthenticationPrincipal Jwt jwt,
+                                                           @RequestBody com.techlink.dto.EstadoRequest request) {
+        return ResponseEntity.ok(perfilService.actualizarEstado(idDe(jwt), request.frase()));
+    }
+
     // Foto de perfil: JPG o PNG de hasta 2 MB (multipart, campo "foto").
     @PostMapping("/perfil/foto")
     public ResponseEntity<PerfilResponse> subirFoto(@AuthenticationPrincipal Jwt jwt, @RequestParam("foto") MultipartFile foto) {
