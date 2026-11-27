@@ -20,6 +20,68 @@ const ESTADOS = {
 
 // HU-03: un estudiante de ciclos avanzados postula a ser mentor adjuntando su comprobante de cursos aprobados
 // (PDF o imagen, máximo 5 MB). Al enviarla queda «En revisión» y se le avisa que la recibimos.
+const PASOS = [
+  {
+    titulo: 'Entra a tu cuenta de alumno',
+    texto: <>Ingresa a <a href="https://sis.tecsup.edu.pe/Alumnos/Login" target="_blank" rel="noopener noreferrer">sis.tecsup.edu.pe</a> con tu usuario de Tecsup.</>
+  },
+  {
+    titulo: 'Abre «Concentración de calificaciones»',
+    texto: <>Ve a la sección <strong>Consultas</strong> y elige <strong>Concentración de calificaciones</strong>.</>
+  },
+  {
+    titulo: 'Toma la captura o descarga el PDF',
+    texto: <>Busca el período donde aparece el curso que quieres enseñar. Basta con los cursos que vas a dictar, no todos. En cada curso tu nota final debe ser de <strong>{NOTA_MINIMA} o más</strong> (escala de 0 a 20).</>
+  },
+  {
+    titulo: 'Súbelo aquí y envía',
+    texto: <>Adjunta la imagen (JPG o PNG) o el PDF, añade un comentario si quieres y pulsa «Enviar postulación».</>
+  }
+];
+const SEGUNDOS_POR_PASO = 6;
+
+// Las indicaciones, como un carrusel: avanza solo cuando se llena la barrita del punto activo (se detiene si pasas el cursor o enfocas algo dentro), se maneja con las
+// flechas o con los puntos, y la tarjeta se oscurece al pasar el cursor por encima. Si el sistema pide menos movimiento, no avanza solo.
+function PasosCarrusel() {
+  const [actual, setActual] = useState(0);
+  const [pausa, setPausa] = useState(false);
+
+  const ir = (n) => setActual((n + PASOS.length) % PASOS.length);
+
+  return (
+    <div className="cu-carrusel" role="region" aria-roledescription="carrusel" aria-label="¿Cómo postular?"
+      onMouseEnter={() => setPausa(true)} onMouseLeave={() => setPausa(false)}
+      onFocus={() => setPausa(true)} onBlur={() => setPausa(false)}>
+      <div className="cu-car-cab">
+        <h3>¿Cómo postular?</h3>
+        <span aria-live="polite">Paso {actual + 1} de {PASOS.length}</span>
+      </div>
+      <div className="cu-car-ventana">
+        <div className="cu-car-pista" style={{ transform: `translateX(-${actual * 100}%)` }}>
+          {PASOS.map((p, n) => (
+            <article key={p.titulo} className={`cu-car-paso${n === actual ? ' activo' : ''}`} inert={n !== actual} aria-label={`Paso ${n + 1} de ${PASOS.length}`}>
+              <span className="cu-car-num" aria-hidden="true">{n + 1}</span>
+              <div><strong>{p.titulo}</strong><p>{p.texto}</p></div>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="cu-car-ctrl">
+        <button type="button" className="cu-car-flecha" onClick={() => ir(actual - 1)} aria-label="Paso anterior">‹</button>
+        <div className="cu-car-puntos">
+          {PASOS.map((p, n) => (
+            <button key={p.titulo} type="button" className={`cu-car-punto${n === actual ? ' activo' : ''}${pausa ? ' quieto' : ''}`}
+              style={{ '--cu-segundos': `${SEGUNDOS_POR_PASO}s` }} onClick={() => ir(n)} onAnimationEnd={n === actual ? () => ir(actual + 1) : undefined} aria-label={`Ir al paso ${n + 1}`} aria-current={n === actual}>
+              <i aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+        <button type="button" className="cu-car-flecha" onClick={() => ir(actual + 1)} aria-label="Paso siguiente">›</button>
+      </div>
+    </div>
+  );
+}
+
 export default function PostularMentor() {
   const { authFetch, usuario } = useAuth();
   const fotoPropia = useFotoPropia();
@@ -138,35 +200,11 @@ export default function PostularMentor() {
             Adjunta el comprobante de tus cursos aprobados, sacado de tu cuenta de Tecsup. Un administrador lo revisará
             para acreditarte como mentor.
           </p>
-          <div className="cu-pasos2">
-            <h3>¿Cómo postular?</h3>
-            <ol>
-              <li>
-                <span className="cu-num">1</span>
-                <div><strong>Entra a tu cuenta de alumno</strong>
-                  <p>Ingresa a <a href="https://sis.tecsup.edu.pe/Alumnos/Login" target="_blank" rel="noopener noreferrer">sis.tecsup.edu.pe</a> con tu usuario de Tecsup.</p></div>
-              </li>
-              <li>
-                <span className="cu-num">2</span>
-                <div><strong>Abre «Concentración de calificaciones»</strong>
-                  <p>Ve a la sección <strong>Consultas</strong> y elige <strong>Concentración de calificaciones</strong>.</p></div>
-              </li>
-              <li>
-                <span className="cu-num">3</span>
-                <div><strong>Toma la captura o descarga el PDF</strong>
-                  <p>Busca el período donde aparece el curso que quieres enseñar. Basta con los cursos que vas a dictar, no todos. En cada curso tu nota final debe ser de <strong>{NOTA_MINIMA} o más</strong> (escala de 0 a 20).</p></div>
-              </li>
-              <li>
-                <span className="cu-num">4</span>
-                <div><strong>Súbelo aquí y envía</strong>
-                  <p>Adjunta la imagen (JPG o PNG) o el PDF, añade un comentario si quieres y pulsa «Enviar postulación».</p></div>
-              </li>
-            </ol>
-            <p className="cu-importante">
-              <strong>Importante:</strong> Solo puedes ser mentor de cursos aprobados con nota {NOTA_MINIMA} o más. La captura debe mostrar tu nombre, el período y la nota. Solo se aceptan imágenes sin editar:
-              un administrador las compara con tu cuenta.
-            </p>
-          </div>
+          <PasosCarrusel />
+          <p className="cu-importante">
+            <strong>Importante:</strong> Solo puedes ser mentor de cursos aprobados con nota {NOTA_MINIMA} o más. La captura debe mostrar tu nombre, el período y la nota. Solo se aceptan imágenes sin editar:
+            un administrador las compara con tu cuenta.
+          </p>
 
           <input ref={entrada} type="file" accept="application/pdf,image/png,image/jpeg" className="cu-oculto" onChange={elegir} aria-label="Elegir comprobante" />
           <div className="cu-zona-envoltura">

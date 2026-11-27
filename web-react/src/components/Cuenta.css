@@ -22,7 +22,7 @@
 .cu-nombre { font-size: 19px; font-weight: 700; color: var(--cu-marino); overflow-wrap: anywhere; }
 .cu-sub, .cu-ayuda { font-size: 13px; color: var(--cu-gris); line-height: 1.45; }
 .cu-vacio { padding: 1.5rem 0; color: var(--cu-gris); }
-.cu-obligatorio { font-weight: 400; font-size: 12px; color: var(--cu-gris); }
+.cu-obligatorio, .cu-opcional { font-weight: 400; font-size: 12px; color: var(--cu-gris); }
 
 .cu label { margin-top: 0.6rem; font-size: 14px; font-weight: 700; }
 .cu input[type='text'], .cu textarea, .cu select { width: 100%; padding: 0.7rem 0.85rem; font-size: 15px; color: var(--cu-tinta); background: #fff; border: 1px solid #d9d9dd; border-radius: 10px; box-sizing: border-box; }
@@ -231,3 +231,33 @@
 .cu-boton-gris { align-self: flex-start; padding: 0.4rem 1.1rem; }
 .cu-estado.sobre-foto { right: auto; left: 56%; bottom: 2px; padding: 0.3rem 0.75rem; font-size: 12px; max-width: 200px; }
 .cu-perfil-datos { padding-top: 1.2rem; }
+
+/* «Ser mentor»: las indicaciones como carrusel. */
+.cu-carrusel { display: flex; flex-direction: column; gap: 0.85rem; padding: 1rem; background: #f6f6f4; border-radius: 16px; }
+.cu-car-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.cu-car-cab h3 { margin: 0; font-size: 16px; }
+.cu-car-cab span { font-size: 13px; font-weight: 700; color: var(--cu-gris); }
+.cu-car-ventana { overflow: hidden; border-radius: 14px; }
+.cu-car-pista { display: flex; transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1); }
+.cu-car-paso { box-sizing: border-box; flex: 0 0 100%; display: flex; align-items: center; gap: 1.1rem; min-height: 112px; padding: 1.15rem 1.35rem; color: #0b0b0c; background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; opacity: 0.45; transition: background 0.25s, color 0.25s, border-color 0.25s, opacity 0.4s; }
+.cu-car-paso.activo { opacity: 1; }
+.cu-car-paso strong { font-size: 17px; }
+.cu-car-paso p { margin: 0.25rem 0 0; font-size: 14px; line-height: 1.5; color: var(--cu-gris); transition: color 0.25s; }
+.cu-car-num { flex: none; display: grid; place-items: center; width: 52px; height: 52px; font-size: 24px; font-weight: 800; color: #fff; background: #0b0b0c; border-radius: 16px; transition: background 0.25s, color 0.25s, transform 0.25s; }
+.cu-car-paso:hover { color: #fff; background: #0b0b0c; border-color: #0b0b0c; }
+.cu-car-paso:hover p { color: rgba(255, 255, 255, 0.78); }
+.cu-car-paso:hover p a { color: #f5b301; }
+.cu-car-paso:hover .cu-car-num { color: #0b0b0c; background: #f5b301; transform: rotate(-6deg) scale(1.05); }
+.cu-car-ctrl { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
+.cu-car-flecha { display: grid; place-items: center; width: 34px; height: 34px; padding: 0 0 3px; font: inherit; font-size: 22px; line-height: 1; color: #0b0b0c; background: #fff; border: 1px solid #d0d0d5; border-radius: 50%; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.cu-car-flecha:hover { background: #0b0b0c; border-color: #0b0b0c; color: #fff; }
+.cu-car-puntos { display: flex; gap: 0.45rem; }
+.cu-car-punto { position: relative; width: 26px; height: 6px; padding: 0; overflow: hidden; background: #d0d0d5; border: 0; border-radius: 999px; cursor: pointer; transition: width 0.3s; }
+.cu-car-punto.activo { width: 52px; }
+.cu-car-punto i { position: absolute; inset: 0; background: #0b0b0c; transform: scaleX(0); transform-origin: left; }
+.cu-car-punto.activo i { animation: cu-car-llenar var(--cu-segundos, 6s) linear forwards; }
+.cu-car-punto.activo.quieto i { animation-play-state: paused; }
+@keyframes cu-car-llenar { to { transform: scaleX(1); } }
+.cu-car-flecha:focus-visible, .cu-car-punto:focus-visible { outline: 2px solid #0b0b0c; outline-offset: 2px; }
+@media (max-width: 560px) { .cu-car-paso { flex-direction: column; align-items: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .cu-car-pista, .cu-car-paso, .cu-car-num { transition: none; } .cu-car-punto.activo i { animation: none; transform: scaleX(1); } }

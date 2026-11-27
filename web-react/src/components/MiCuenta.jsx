@@ -189,13 +189,11 @@ export default function MiCuenta() {
     setAviso('');
     setErrores((x) => ({ ...x, frase: undefined }));
     try {
-      const response = await authFetch('/api/perfil', {
-        method: 'PUT',
-        body: JSON.stringify({ descripcion, ciclo: esEstudiante && ciclo ? Number(ciclo) : null, intereses, frase: valor })
-      });
+      // Solo el estado: no depende de que la descripción y el resto del perfil ya estén completos.
+      const response = await authFetch('/api/perfil/estado', { method: 'PUT', body: JSON.stringify({ frase: valor }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setErrores((x) => ({ ...x, frase: data.campos?.frase || data.campos?.descripcion || data.error || 'No se pudo guardar tu estado.' }));
+        setErrores((x) => ({ ...x, frase: data.campos?.frase || data.error || 'No se pudo guardar tu estado.' }));
         return;
       }
       setFrase(data.frase || '');
@@ -336,7 +334,7 @@ export default function MiCuenta() {
       </section>
 
       <section className="cu-tarjeta">
-        <label htmlFor="cu-desc">Descripción <span className="cu-obligatorio">(obligatoria)</span></label>
+        <label htmlFor="cu-desc">Descripción <span className="cu-opcional">(opcional)</span></label>
         <textarea
           id="cu-desc"
           rows={4}
