@@ -269,8 +269,7 @@ export default function InicioEstudiante({ primerNombre, irA }) {
           {sesiones === false && <p className="in-vacio">No pudimos cargar tus sesiones.</p>}
           {sesiones && !siguiente && (
             <div className="in-sesion-vacia">
-              <p>Todavía no tienes sesiones. Elige un mentor y agenda la primera.</p>
-              <button type="button" className="in-boton claro" onClick={() => irA('buscar')}>Buscar mentor</button>
+              <p>Todavía no tienes sesiones agendadas. Cuando agendes una, la verás aquí con su cuenta regresiva.</p>
             </div>
           )}
           {siguiente && (

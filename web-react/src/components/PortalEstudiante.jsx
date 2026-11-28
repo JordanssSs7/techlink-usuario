@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import './PortalEstudiante.css';
 import { useAuth } from '../auth/authContext';
 import InicioEstudiante from './InicioEstudiante';
-import BuscarMentor from './BuscarMentor';
+import DirectorioMentores from './DirectorioMentores';
 import MisSesiones from './MisSesiones';
 import Foro from './Foro';
 import { tomarSalaPendiente } from '../enlaceSala';
@@ -13,7 +13,6 @@ import Calendario from './Calendario';
 import CentroAyuda from './CentroAyuda';
 import Notificaciones from './Notificaciones';
 import useNotificacionesPendientes from './useNotificaciones';
-import MentoresRanking from './MentoresRanking';
 import MiCuenta from './MiCuenta';
 import PostularMentor from './PostularMentor';
 import Avatar from './Avatar';
@@ -108,7 +107,6 @@ export default function PortalEstudiante() {
   const salaInicial = salaPendiente?.tipo === 'sesion' ? salaPendiente.id : null;
   const charlaInicial = salaPendiente?.tipo === 'charla' ? salaPendiente.id : null;
   const [seccion, setSeccion] = useState(salaInicial ? 'sesiones' : charlaInicial ? 'charlas' : 'inicio');
-  const [vistaBuscar, setVistaBuscar] = useState('buscar'); // dentro de «Buscar mentor»: 'buscar' o 'ranking'
   const [irConsulta, setIrConsulta] = useState(null); // consulta del foro que abrió un aviso
 
   // Un aviso (por ejemplo, «reaccionaron a tu respuesta») lleva directo a su consulta del foro.
@@ -137,11 +135,8 @@ export default function PortalEstudiante() {
   }, [menuAbierto]);
 
   const irA = (id) => {
-    // «Mentores» ahora vive dentro de «Buscar mentor», en la pestaña del ranking.
-    if (id === 'mentores') {
-      setVistaBuscar('ranking');
-      id = 'buscar';
-    }
+    // «Mentores» ahora es la misma pantalla de «Buscar mentor».
+    if (id === 'mentores') id = 'buscar';
     setSeccion(id);
     setMenuAbierto(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -237,13 +232,7 @@ export default function PortalEstudiante() {
             <section key="buscar" className="pt-seccion pt-buscar">
               <p className="pt-eyebrow">Mentorías</p>
               <h1>Buscar <span>mentor</span></h1>
-              <div className="pt-pestanas" role="tablist" aria-label="Cómo buscar mentores">
-                <button type="button" role="tab" aria-selected={vistaBuscar === 'buscar'} className={vistaBuscar === 'buscar' ? 'activa' : ''}
-                  onClick={() => setVistaBuscar('buscar')}>Buscar por curso y horario</button>
-                <button type="button" role="tab" aria-selected={vistaBuscar === 'ranking'} className={vistaBuscar === 'ranking' ? 'activa' : ''}
-                  onClick={() => setVistaBuscar('ranking')}>Ranking de mentores</button>
-              </div>
-              {vistaBuscar === 'buscar' ? <BuscarMentor /> : <MentoresRanking />}
+              <DirectorioMentores />
             </section>
           )}
           {seccion === 'postular' && (

@@ -1,0 +1,89 @@
+/* «Buscar mentor» en una sola pantalla: buscador, categorías, una barra de filtros y la lista de mentores.
+   Mismos colores de la aplicación (blanco y negro). Usa las variables de .pt (PortalEstudiante.css). */
+.dm { display: flex; flex-direction: column; gap: 1rem; color: var(--tinta, #0b0b0c); }
+.dm h2, .dm h3, .dm p, .dm ul, .dm ol { margin: 0; }
+.dm ul, .dm ol { padding: 0; list-style: none; }
+
+/* Buscador */
+.dm-buscador { display: flex; align-items: center; gap: 0.7rem; padding: 0.35rem 0.6rem 0.35rem 1.2rem; background: #fff; border: 1px solid var(--linea, #e4e4e7); border-radius: 999px; box-shadow: 0 10px 26px -20px rgba(0, 0, 0, 0.45); transition: border-color 0.2s, box-shadow 0.2s; animation: dm-sube 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.dm-buscador:focus-within { border-color: #0b0b0c; box-shadow: 0 0 0 3px rgba(11, 11, 12, 0.08); }
+.dm-buscador svg { flex: none; color: #77777e; }
+.dm-buscador input { flex: 1; min-width: 0; padding: 0.7rem 0; font: inherit; font-size: 15.5px; color: inherit; background: transparent; border: 0; outline: none; }
+.dm-buscador input::-webkit-search-cancel-button { display: none; }
+.dm-borrar { flex: none; width: 28px; height: 28px; font-size: 18px; line-height: 1; color: #5c5c63; background: #f1f1ef; border: 0; border-radius: 50%; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.dm-borrar:hover { color: #fff; background: #0b0b0c; }
+
+/* Categorías */
+.dm-categorias { display: flex; flex-wrap: wrap; gap: 0.45rem; animation: dm-sube 0.5s 0.05s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.dm-cat { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.5rem 1rem; font: inherit; font-size: 13.5px; font-weight: 600; color: #3f3f46; background: transparent; border: 1px solid transparent; border-radius: 999px; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.dm-cat:hover:not(.activa) { color: #0b0b0c; background: #fff; border-color: var(--linea, #e4e4e7); }
+.dm-cat.activa { color: #fff; background: #0b0b0c; }
+
+/* Barra de filtros: una sola fila */
+.dm-barra { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem 1rem; padding-top: 0.9rem; border-top: 1px solid #e3e3df; animation: dm-sube 0.5s 0.1s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.dm-filtros { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+.dm-sel { width: 150px; }
+.dm-sel.ancho { width: 200px; }
+.dm .dd-boton { padding: 0.55rem 0.9rem; font-size: 13.5px; border-radius: 999px; background: #fff; }
+.dm .dd-lista { min-width: 100%; width: max-content; max-width: 340px; }
+.dm .dd-flecha { width: 12px; height: 12px; }
+.dm-limpiar { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; font: inherit; font-size: 13px; font-weight: 700; color: #5c5c63; background: transparent; border: 0; border-radius: 999px; cursor: pointer; animation: dm-aparece 0.3s; transition: color 0.2s, background 0.2s; }
+.dm-limpiar:hover { color: #0b0b0c; background: #ecece8; }
+.dm-orden { display: flex; align-items: center; gap: 0.8rem; font-size: 13.5px; color: #5c5c63; }
+.dm-orden .dm-sel { width: 175px; }
+.dm-orden .dd-lista { left: auto; right: 0; }
+
+/* Lista de mentores */
+.dm-lista { display: flex; flex-direction: column; gap: 0.7rem; }
+.dm-mentor { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 1.1rem; padding: 0.95rem 1.2rem; background: #fff; border: 1px solid var(--linea, #e4e4e7); border-radius: 18px; cursor: pointer; animation: dm-sube 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; animation-delay: calc(var(--i, 0) * 55ms); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s, border-color 0.2s; }
+.dm-mentor:hover { transform: translateY(-2px); border-color: #0b0b0c; box-shadow: 0 16px 30px -22px rgba(0, 0, 0, 0.5); }
+.dm-avatar { transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.dm-mentor:hover .dm-avatar { transform: scale(1.05) rotate(-3deg); }
+.dm-info { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.dm-info h3 { font-family: 'Sora', 'DM Sans', sans-serif; font-size: 17px; letter-spacing: -0.02em; }
+.dm-linea { display: flex; align-items: center; flex-wrap: wrap; gap: 0.2rem 0.7rem; font-size: 13.5px; color: #5c5c63; }
+.dm-nota { display: inline-flex; align-items: center; gap: 0.25rem; }
+.dm-nota b { color: #f5b301; font-size: 14px; }
+.dm-nota strong { color: #0b0b0c; }
+.dm-nota small { font-size: 12.5px; color: #77777e; }
+.dm-nuevo { padding: 0.05rem 0.55rem; font-size: 11.5px; font-weight: 700; color: #3f3f46; background: #f1f1ef; border-radius: 999px; }
+.dm-esp { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dm-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.dm-chips li { padding: 0.2rem 0.65rem; font-size: 12px; font-weight: 500; color: #3f3f46; background: #f4f4f2; border-radius: 999px; }
+.dm-chips li.mas { color: #77777e; background: transparent; border: 1px dashed #cfcfc8; }
+
+/* Acciones: «Agendar» y un botón redondo con flecha que se abre para decir «Ver perfil» */
+.dm-acciones { display: flex; align-items: center; gap: 0.6rem; }
+.dm-agendar { padding: 0.6rem 1.2rem; font: inherit; font-size: 14px; font-weight: 700; color: #0b0b0c; background: #f6f6f4; border: 1px solid #d9d9dd; border-radius: 999px; cursor: pointer; transition: color 0.2s, background 0.2s, border-color 0.2s; }
+.dm-agendar:hover { color: #fff; background: #0b0b0c; border-color: #0b0b0c; }
+.dm-ir { display: inline-flex; align-items: center; justify-content: center; gap: 0; width: 42px; height: 42px; padding: 0; overflow: hidden; font: inherit; font-size: 14px; font-weight: 700; color: #fff; background: #0b0b0c; border: 0; border-radius: 999px; cursor: pointer; transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1), gap 0.35s, padding 0.35s, box-shadow 0.3s; }
+.dm-ir span { max-width: 0; opacity: 0; white-space: nowrap; transition: max-width 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s; }
+.dm-ir svg { flex: none; transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.dm-mentor:hover .dm-ir, .dm-ir:focus-visible { width: 124px; gap: 0.5rem; padding: 0 0.9rem 0 1.1rem; box-shadow: 0 12px 22px -12px rgba(0, 0, 0, 0.7); }
+.dm-mentor:hover .dm-ir span, .dm-ir:focus-visible span { max-width: 80px; opacity: 1; }
+.dm-ir:hover svg { transform: translateX(3px); }
+.dm-ir:focus-visible, .dm-agendar:focus-visible { outline: 2px solid #0b0b0c; outline-offset: 2px; }
+
+.dm-vacio { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; padding: 2.4rem 1rem; text-align: center; color: #5c5c63; background: #fff; border: 1px dashed #d4d4cc; border-radius: 20px; animation: dm-aparece 0.4s; }
+.dm-vacio svg { color: #0b0b0c; animation: dm-flota 4.5s ease-in-out infinite; }
+.dm-vacio strong { font-family: 'Sora', 'DM Sans', sans-serif; font-size: 16px; color: #0b0b0c; }
+.dm-vacio ul { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+.dm-vacio li button { padding: 0.5rem 1rem; font: inherit; font-size: 13.5px; font-weight: 600; color: #0b0b0c; background: #fff; border: 1px solid #0b0b0c; border-radius: 999px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.dm-vacio li button:hover { color: #fff; background: #0b0b0c; }
+
+@keyframes dm-sube { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes dm-aparece { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dm-flota { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+@media (max-width: 760px) {
+  .dm-sel, .dm-sel.ancho { width: 100%; }
+  .dm-filtros { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .dm-mentor { grid-template-columns: auto minmax(0, 1fr); }
+  .dm-acciones { grid-column: 1 / -1; justify-content: flex-end; }
+  .dm-ir { width: 124px; gap: 0.5rem; padding: 0 0.9rem 0 1.1rem; }
+  .dm-ir span { max-width: 80px; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dm-buscador, .dm-categorias, .dm-barra, .dm-mentor, .dm-vacio, .dm-vacio svg { animation: none; }
+  .dm-mentor, .dm-avatar, .dm-ir, .dm-ir span, .dm-ir svg { transition: none; }
+}

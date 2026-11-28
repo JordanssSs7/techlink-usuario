@@ -75,7 +75,7 @@ export function PerfilPublico({ idMentor, onVolver, onAgendar, acciones = null, 
   }, [authFetch, idMentor]);
 
   return (
-    <div className="cu">
+    <div className="cu cu-perfil">
       <button type="button" className="cu-volver" onClick={onVolver}>{etiquetaVolver}</button>
       {error && <p className="cu-error" role="alert">{error}</p>}
       {!perfil && !error && <Cargando texto="Cargando perfil…" />}
@@ -83,77 +83,86 @@ export function PerfilPublico({ idMentor, onVolver, onAgendar, acciones = null, 
       {perfil && (
         <>
           <PortadaPublica idUsuario={perfil.idUsuario} />
-          <section className="cu-tarjeta cu-cabecera">
-            <Avatar idUsuario={perfil.idUsuario} tieneFoto={perfil.tieneFoto} iniciales={iniciales(perfil)} tamano={96} insignia mostrarEstado />
-            <div className="cu-cabecera-texto">
-              <h2 className="cu-nombre">{nombreCompleto(perfil)}</h2>
-              {perfil.especialidad && <p className="cu-sub">{perfil.especialidad}</p>}
-              {perfil.frase && <p className="cu-estado fijo"><span aria-hidden="true">💬</span>{perfil.frase}</p>}
-              <Calificacion promedio={perfil.promedio} total={perfil.totalCalificaciones} />
-              <p className="cu-datos">
-                <span><strong>{horas(perfil.horasDictadas)}</strong> dictadas</span>
-                <span><strong>{perfil.sesionesCompletadas}</strong> sesiones</span>
-              </p>
-              <Insignias lista={perfil.insignias} />
-              {acciones}
+
+          <section className="pf-cabecera">
+            <div className="pf-id">
+              <Avatar idUsuario={perfil.idUsuario} tieneFoto={perfil.tieneFoto} iniciales={iniciales(perfil)} tamano={104} insignia mostrarEstado />
+              <div className="pf-nombre">
+                <h2>{nombreCompleto(perfil)}</h2>
+                {perfil.especialidad && <p className="pf-esp">{perfil.especialidad}</p>}
+                {perfil.frase && <p className="pf-frase"><span aria-hidden="true">💬</span>{perfil.frase}</p>}
+                {acciones}
+              </div>
             </div>
-            <div className="cu-acciones-perfil">
-              {puedeAgendar && <button type="button" className="cu-boton primario" onClick={() => onAgendar(perfil)}>Agendar sesión</button>}
+
+            <div className="pf-acciones">
+              {puedeAgendar && <button type="button" className="pf-agendar" onClick={() => onAgendar(perfil)}>Agendar sesión</button>}
               {perfil.idUsuario !== usuario.id && (
-                <button type="button" className="cu-boton" onClick={() => setReportando(true)}>Reportar</button>
+                <button type="button" className="pf-reportar" onClick={() => setReportando(true)}>Reportar</button>
               )}
             </div>
+
+            <dl className="pf-cifras">
+              <div>
+                <dt>Calificación</dt>
+                <dd>{perfil.promedio == null ? <span className="pf-nuevo">Nuevo</span> : <><b aria-hidden="true">★</b>{Number(perfil.promedio).toFixed(1)}<small>({perfil.totalCalificaciones})</small></>}</dd>
+              </div>
+              <div><dt>Horas dictadas</dt><dd>{horas(perfil.horasDictadas)}</dd></div>
+              <div><dt>Sesiones</dt><dd>{perfil.sesionesCompletadas}</dd></div>
+            </dl>
           </section>
 
-          {(perfil.descripcion || perfil.biografia) && (
-            <section className="cu-tarjeta">
-              <h3 className="cu-titulo-tarjeta">Sobre {perfil.nombres}</h3>
-              {perfil.descripcion && <p>{perfil.descripcion}</p>}
-              {perfil.biografia && <p>{perfil.biografia}</p>}
-            </section>
-          )}
+          <div className="pf-cuerpo">
+            <div className="pf-col">
+              {(perfil.descripcion || perfil.biografia) && (
+                <section className="pf-tarjeta">
+                  <h3>Sobre {perfil.nombres}</h3>
+                  {perfil.descripcion && <p>{perfil.descripcion}</p>}
+                  {perfil.biografia && <p>{perfil.biografia}</p>}
+                </section>
+              )}
 
-          <section className="cu-tarjeta">
-            <h3 className="cu-titulo-tarjeta">Cursos que domina</h3>
-            {perfil.cursos.length === 0
-              ? <p className="cu-sub">Todavía no registró cursos.</p>
-              : <ul className="cu-chips fijos">{perfil.cursos.map((c) => <li key={c}>{c}</li>)}</ul>}
-            {(perfil.fortalezas.length > 0 || perfil.areas.length > 0) && (
-              <>
+              <section className="pf-tarjeta">
+                <h3>Últimos comentarios</h3>
+                {perfil.comentarios.length === 0
+                  ? <p className="pf-vacio">Todavía no hay comentarios.</p>
+                  : (
+                    <ul className="pf-comentarios">
+                      {perfil.comentarios.map((c, i) => (
+                        <li key={i}>
+                          <div className="pf-comentario-cab"><Estrellas valor={c.estrellas} /><span>{c.estudiante} · {fechaCorta(c.fecha)}</span></div>
+                          <p>“{c.comentario}”</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </section>
+            </div>
+
+            <aside className="pf-col pf-lateral">
+              <section className="pf-tarjeta">
+                <h3>Cursos que domina</h3>
+                {perfil.cursos.length === 0
+                  ? <p className="pf-vacio">Todavía no registró cursos.</p>
+                  : <ul className="pf-chips oscuro">{perfil.cursos.map((c) => <li key={c}>{c}</li>)}</ul>}
                 {perfil.fortalezas.length > 0 && (
-                  <><h4 className="cu-subtitulo">Fortalezas</h4><ul className="cu-chips fijos suave">{perfil.fortalezas.map((f) => <li key={f}>{f}</li>)}</ul></>
+                  <><h4>Fortalezas</h4><ul className="pf-chips">{perfil.fortalezas.map((f) => <li key={f}>{f}</li>)}</ul></>
                 )}
                 {perfil.areas.length > 0 && (
-                  <><h4 className="cu-subtitulo">Áreas</h4><ul className="cu-chips fijos suave">{perfil.areas.map((a) => <li key={a}>{a}</li>)}</ul></>
+                  <><h4>Áreas</h4><ul className="pf-chips">{perfil.areas.map((a) => <li key={a}>{a}</li>)}</ul></>
                 )}
-              </>
-            )}
-          </section>
+              </section>
 
-          {perfil.insignias.length > 0 && (
-            <section className="cu-tarjeta">
-              <h3 className="cu-titulo-tarjeta">Insignias</h3>
-              <ul className="cu-lista-insignias">
-                {perfil.insignias.map((i) => <li key={i.codigo}><strong>🏅 {i.nombre}</strong><span className="cu-sub">{i.descripcion}</span></li>)}
-              </ul>
-            </section>
-          )}
-
-          <section className="cu-tarjeta">
-            <h3 className="cu-titulo-tarjeta">Últimos comentarios</h3>
-            {perfil.comentarios.length === 0
-              ? <p className="cu-sub">Todavía no hay comentarios.</p>
-              : (
-                <ul className="cu-comentarios">
-                  {perfil.comentarios.map((c, i) => (
-                    <li key={i}>
-                      <div className="cu-comentario-cab"><Estrellas valor={c.estrellas} /><span className="cu-sub">{c.estudiante} · {fechaCorta(c.fecha)}</span></div>
-                      <p>“{c.comentario}”</p>
-                    </li>
-                  ))}
-                </ul>
+              {perfil.insignias.length > 0 && (
+                <section className="pf-tarjeta">
+                  <h3>Insignias</h3>
+                  <ul className="pf-insignias">
+                    {perfil.insignias.map((i) => <li key={i.codigo}><span aria-hidden="true">🏅</span><div><strong>{i.nombre}</strong><small>{i.descripcion}</small></div></li>)}
+                  </ul>
+                </section>
               )}
-          </section>
+            </aside>
+          </div>
 
           {reportando && (
             <ReportarModal

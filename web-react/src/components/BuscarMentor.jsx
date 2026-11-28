@@ -61,6 +61,27 @@ function Avatar({ mentor }) {
 }
 
 // HU-04: el estudiante elige los cursos en los que va mal y su horario libre; el agente de IA propone el top 3.
+// El porcentaje de coincidencia sube desde 0 hasta su valor, al ritmo en que se llena el anillo.
+function Porcentaje({ valor }) {
+  const [mostrado, setMostrado] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      const t = setTimeout(() => setMostrado(valor), 0);
+      return () => clearTimeout(t);
+    }
+    let cuadro;
+    const inicio = performance.now() + 200;
+    const paso = (t) => {
+      const avance = Math.min(1, Math.max(0, (t - inicio) / 1000));
+      setMostrado(Math.round(valor * (1 - (1 - avance) ** 3)));
+      if (avance < 1) cuadro = requestAnimationFrame(paso);
+    };
+    cuadro = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(cuadro);
+  }, [valor]);
+  return <>{mostrado}</>;
+}
+
 export default function BuscarMentor() {
   const { authFetch } = useAuth();
   const [paso, setPaso] = useState(1);
@@ -518,7 +539,7 @@ export default function BuscarMentor() {
                       <Avatar mentor={m} />
                       <span className="bm-puesto" aria-label={`Puesto ${i + 1}`}>{i + 1}</span>
                     </div>
-                    <div>
+                    <div className="bm-mentor-titulo">
                       {i === 0 && <p className="bm-mejor">Mejor coincidencia</p>}
                       <p className="bm-mentor-nombre">{m.nombres} {m.apellidos}</p>
                       <p className="bm-mentor-esp">{m.especialidad}</p>
@@ -529,23 +550,30 @@ export default function BuscarMentor() {
                       <circle cx="22" cy="22" r="19" className="bm-anillo-fondo" />
                       <circle cx="22" cy="22" r="19" className="bm-anillo-valor" pathLength="100" />
                     </svg>
-                    <span>{m.porcentaje}<small>%</small></span>
+                    <span><Porcentaje valor={m.porcentaje} /><small>%</small></span>
+                    <em>coincide</em>
                   </div>
                 </div>
 
                 <p className="bm-razon">{m.razon}</p>
 
-                <div className="bm-datos">
-                  <div>
-                    <p className="bm-datos-tit">Cursos en común</p>
+                <div className="bm-coinciden">
+                  <div className="bm-bloque">
+                    <p className="bm-datos-tit">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h6a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4Z" /><path d="M20 5h-4a3 3 0 0 0-3 3" /><path d="M20 5v12h-5" /></svg>
+                      Cursos en común
+                    </p>
                     <ul className="bm-chips">
                       {m.cursosEnComun.map((nombre) => (
                         <li key={nombre}><IconoCategoria id={cursoPorNombre.get(nombre)?.categoria || categoriaDe(nombre)} size={14} />{nombre}</li>
                       ))}
                     </ul>
                   </div>
-                  <div>
-                    <p className="bm-datos-tit">Horario en común</p>
+                  <div className="bm-bloque">
+                    <p className="bm-datos-tit">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                      Horario en común
+                    </p>
                     <ul className="bm-chips horario">
                       {m.horariosEnComun.map((h) => (
                         <li key={`${h.diaSemana}-${h.horaInicio}`}>
@@ -554,34 +582,37 @@ export default function BuscarMentor() {
                       ))}
                     </ul>
                   </div>
-
-
-                  {m.fortalezas?.length > 0 && (
-                    <div>
-                      <p className="bm-datos-tit">Fortalezas</p>
-                      <ul className="bm-chips suave">
-                        {m.fortalezas.map((f) => <li key={f}>{f}</li>)}
-                      </ul>
-                    </div>
-                  )}
-
-                  {m.areas?.length > 0 && (
-                    <div>
-                      <p className="bm-datos-tit">Áreas</p>
-                      <ul className="bm-chips suave">
-                        {m.areas.map((a) => <li key={a}>{a}</li>)}
-                      </ul>
-                    </div>
-                  )}
                 </div>
 
-                <div className="bm-acciones">
+                {(m.fortalezas?.length > 0 || m.areas?.length > 0) && (
+                  <div className="bm-perfil-mentor">
+                    {m.fortalezas?.length > 0 && (
+                      <div className="bm-bloque">
+                        <p className="bm-datos-tit">Fortalezas</p>
+                        <ul className="bm-chips suave">
+                          {m.fortalezas.map((f) => <li key={f}>{f}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {m.areas?.length > 0 && (
+                      <div className="bm-bloque">
+                        <p className="bm-datos-tit">Áreas</p>
+                        <ul className="bm-chips suave">
+                          {m.areas.map((a) => <li key={a}>{a}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="bm-mentor-pie">
+                  <p className="bm-mentor-nota">El mentor recibe tu solicitud y la acepta o la rechaza.</p>
                   <button
                     type="button"
                     className="bm-primario"
                     onClick={() => setMentorSeleccionado(m)}
                   >
-                    Agendar sesión
+                    Agendar sesión <span aria-hidden="true">→</span>
                   </button>
                 </div>
               </li>

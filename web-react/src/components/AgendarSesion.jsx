@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/authContext';
 import Cargando from './Cargando';
+import Desplegable from './Desplegable';
 
 const DIAS = [
   'Domingo', 'Lunes', 'Martes', 'Miércoles',
@@ -48,6 +49,77 @@ function puntos(desde, hasta) {
   const lista = [];
   for (let t = desde; t <= hasta; t += 30) lista.push(t);
   return lista;
+}
+
+const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+const aIso = (a, m, d) => `${a}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+const fechaLarga = (iso) => {
+  const [a, m, d] = iso.split('-').map(Number);
+  return mayuscula(new Date(a, m - 1, d).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }));
+};
+const duracionTexto = (min) => {
+  const h = Math.floor(min / 60);
+  const r = min % 60;
+  if (h === 0) return `${r} min`;
+  return r === 0 ? `${h} h` : `${h} h ${r} min`;
+};
+const iniciales = (m) => `${(m.nombres || '')[0] ?? ''}${(m.apellidos || '')[0] ?? ''}`.toUpperCase();
+
+const SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+// Los próximos días en que el mentor atiende (solo esos), con sus franjas. Hoy cuenta si aún queda alguna franja por delante.
+function proximosDias(disponibilidades) {
+  const ahora = new Date();
+  const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+  const lista = [];
+  for (let i = 0; i < 150 && lista.length < 60; i += 1) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + i);
+    const iso = aIso(d.getFullYear(), d.getMonth(), d.getDate());
+    const franjas = disponibilidades.filter((x) => x.diaSemana === obtenerDiaSemana(iso));
+    if (franjas.length === 0) continue;
+    if (i === 0 && franjas.every((f) => aMinutos(f.horaFin) <= minutos)) continue;
+    lista.push({
+      iso,
+      etiqueta: i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : '',
+      semana: SEMANA[d.getDay()],
+      numero: d.getDate(),
+      mes: d.toLocaleDateString('es-PE', { month: 'short' }).replace('.', ''),
+      horario: `${horaCorta(franjas[0].horaInicio).replace(':00', '')} – ${horaCorta(franjas[0].horaFin).replace(':00', '')}`,
+      extra: franjas.length - 1
+    });
+  }
+  return lista;
+}
+
+// Tarjetas con los próximos días disponibles: sin celdas vacías, solo lo que se puede elegir.
+function DiasDisponibles({ valor, onElegir, disponibilidades }) {
+  const [cantidad, setCantidad] = useState(12);
+  const dias = proximosDias(disponibilidades);
+  if (dias.length === 0) return <p className="bm-ayuda">El mentor todavía no tiene días disponibles.</p>;
+  return (
+    <div className="ag-dias">
+      <ul className="ag-dias-lista" role="radiogroup" aria-label="Día de la sesión">
+        {dias.slice(0, cantidad).map((x, i) => (
+          <li key={x.iso}>
+            <button type="button" role="radio" aria-checked={valor === x.iso} className={`ag-dia-card${valor === x.iso ? ' elegido' : ''}`}
+              style={{ '--i': i }} onClick={() => onElegir(x.iso)}>
+              {x.etiqueta && <em>{x.etiqueta}</em>}
+              <span className="ag-dia-sem">{x.semana}</span>
+              <strong>{x.numero}</strong>
+              <span className="ag-dia-mes">{x.mes}</span>
+              <small>{x.horario}{x.extra > 0 ? ` +${x.extra}` : ''}</small>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {dias.length > cantidad && (
+        <button type="button" className="ag-mas" onClick={() => setCantidad((c) => c + 12)}>
+          Ver más fechas
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+      )}
+    </div>
+  );
 }
 
 // HU-07: agendar una sesión. HU-19: con "reprogramar" (una sesión del historial) mueve esa sesión a otro horario
@@ -195,168 +267,201 @@ export default function AgendarSesion({ mentor, onVolver, reprogramar = null, on
     }
   }
 
+  // Al elegir la hora de inicio se propone 1 hora (o lo que quepa en la franja); luego se puede cambiar la duración.
+  function elegirInicio(t) {
+    const dur = Math.min(60, ventana.fin - t);
+    setDesde(t);
+    setHasta(t + dur);
+    elegirRango(ventana, t, t + dur);
+  }
+  function elegirDuracion(dur) {
+    setHasta(desde + dur);
+    elegirRango(ventana, desde, desde + dur);
+  }
+  function elegirFecha(iso) {
+    setFecha(iso);
+    setVentanaId('');
+    setDesde('');
+    setHasta('');
+    setBloqueSeleccionado(null);
+    setError('');
+  }
+
+  const mostrarCurso = !reprogramando && cursos.length > 0;
+  const duraciones = ventana && desde !== '' ? puntos(30, ventana.fin - desde).filter((m) => m % 30 === 0 && m <= 240) : [];
+  const nombreMentor = `${mentor.nombres} ${mentor.apellidos || ''}`.trim();
+
   if (confirmacion) {
     return (
-      <section className="bm-panel">
+      <section className="bm-panel ag ag-listo">
+        <svg className="ag-check" viewBox="0 0 52 52" aria-hidden="true">
+          <circle cx="26" cy="26" r="24" />
+          <path d="m15 27 8 8 15-17" />
+        </svg>
         <h2>{reprogramando ? '¡Sesión reprogramada!' : '¡Solicitud enviada!'}</h2>
-        <p>{reprogramando
+        <p className="ag-listo-texto">{reprogramando
           ? 'Tu mentoría cambió de horario y avisamos al mentor.'
           : 'Le pedimos la sesión al mentor. Cuando la acepte te llegará un aviso y aparecerá en «Mis sesiones».'}</p>
 
-        <p><strong>Mentor:</strong> {mentor.nombres} {mentor.apellidos}</p>
-        <p><strong>Fecha:</strong> {confirmacion.fecha}</p>
-        <p>
-          <strong>Horario:</strong>{' '}
-          {horaCorta(confirmacion.horaInicio)} –{' '}
-          {horaCorta(confirmacion.horaFin)}
-        </p>
-        <p><strong>Estado:</strong> {confirmacion.estado === 'PENDIENTE' ? 'Pendiente de aprobación del mentor' : 'Confirmada'}</p>
+        <dl className="ag-ticket">
+          <div><dt>Mentor</dt><dd>{nombreMentor}</dd></div>
+          <div><dt>Fecha</dt><dd>{fechaLarga(confirmacion.fecha)}</dd></div>
+          <div><dt>Horario</dt><dd>{horaCorta(confirmacion.horaInicio)} – {horaCorta(confirmacion.horaFin)}</dd></div>
+          <div><dt>Estado</dt><dd><span className="ag-estado">{confirmacion.estado === 'PENDIENTE' ? 'Pendiente de aprobación' : 'Confirmada'}</span></dd></div>
+        </dl>
 
-        <button
-          type="button"
-          className="bm-primario"
-          onClick={onVolver}
-        >
+        <button type="button" className="bm-primario" onClick={onVolver}>
           {reprogramando ? 'Volver a mis sesiones' : 'Volver a los mentores'}
         </button>
       </section>
     );
   }
 
+  // Los bloques se numeran según los que se muestren (el curso es opcional y no siempre aparece).
+  const nCurso = mostrarCurso ? 1 : 0;
   return (
-    <section className="bm-panel">
-      <h2>{reprogramando ? 'Reprogramar sesión' : 'Agendar sesión'}</h2>
+    <section className="bm-panel ag">
+      <header className="ag-cab">
+        <span className="ag-avatar" aria-hidden="true">{iniciales(mentor)}</span>
+        <div>
+          <p className="ag-etiqueta">{reprogramando ? 'Reprogramar' : 'Nueva sesión'}</p>
+          <h2>{reprogramando ? 'Elige otro horario' : 'Agendar sesión'}</h2>
+          <p className="ag-mentor">con <strong>{nombreMentor}</strong>{mentor.especialidad ? ` · ${mentor.especialidad}` : ''}</p>
+        </div>
+      </header>
 
-      <p>
-        <strong>Mentor:</strong> {mentor.nombres} {mentor.apellidos}
-      </p>
-
-      <p className="bm-ayuda">
-        {reprogramando
-          ? 'Elige el nuevo día y horario. Solo se puede cambiar con al menos 2 horas de anticipación.'
-          : 'Selecciona una fecha y un horario disponible para tu mentoría.'}
-      </p>
-
-      {error && (
-        <p className="bm-error" role="alert">{error}</p>
+      {reprogramando && (
+        <p className="bm-ayuda">Solo se puede cambiar con al menos 2 horas de anticipación.</p>
       )}
+
+      {error && <p className="bm-error" role="alert">{error}</p>}
 
       {cargando ? (
         <Cargando texto="Cargando horarios…" />
       ) : (
         <>
-          <p><strong>Horarios del mentor:</strong></p>
-
-          {disponibilidades.map((d) => (
-            <p key={d.idDisponibilidad}>
-              {DIAS[d.diaSemana % 7] || `Día ${d.diaSemana}`}:{' '}
-              {horaCorta(d.horaInicio)} – {horaCorta(d.horaFin)}
-            </p>
-          ))}
-
-          {!reprogramando && cursos.length > 0 && (
-            <>
-              <label className="bm-etiqueta" htmlFor="curso-sesion">
-                Curso que quieres reforzar (opcional)
-              </label>
-              <select
-                id="curso-sesion"
-                value={cursoId}
-                onChange={(e) => setCursoId(e.target.value)}
-              >
-                <option value="">Sin especificar</option>
-                {cursos.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}</option>
+          {disponibilidades.length > 0 && (
+            <div className="ag-atiende">
+              <span>Atiende</span>
+              <ul>
+                {disponibilidades.map((d) => (
+                  <li key={d.idDisponibilidad}><strong>{(DIAS[d.diaSemana % 7] || `Día ${d.diaSemana}`).slice(0, 3)}</strong> {horaCorta(d.horaInicio)} – {horaCorta(d.horaFin)}</li>
                 ))}
-              </select>
-            </>
+              </ul>
+            </div>
           )}
 
-          <label className="bm-etiqueta" htmlFor="fecha-sesion">
-            Fecha de la sesión
-          </label>
+          <div className={`ag-cuerpo${mostrarCurso ? ' con-curso' : ''}`}>
+            <div className="ag-col">
+              <div className="ag-bloque ag-dia">
+                <h3><span className="ag-num">1</span> Elige el día<small>Días en que atiende</small></h3>
+                <DiasDisponibles valor={fecha} onElegir={elegirFecha} disponibilidades={disponibilidades} />
+              </div>
+            </div>
 
-          <input
-            id="fecha-sesion"
-            type="date"
-            min={obtenerFechaLocal()}
-            value={fecha}
-            onChange={(e) => {
-              setFecha(e.target.value);
-              setVentanaId('');
-              setDesde('');
-              setHasta('');
-              setBloqueSeleccionado(null);
-              setError('');
-            }}
-          />
-
-          {fecha && (
-            <>
-              <h3>Horarios para la fecha seleccionada</h3>
-
-              {!ventana ? (
-                <p className="bm-ayuda">
-                  {fecha < obtenerFechaLocal() ? 'Elige una fecha desde hoy.' : 'El mentor no tiene horarios para ese día.'}
-                </p>
-              ) : (
-                <div className="ag-rango">
-                  {ventanas.length > 1 && (
-                    <>
-                      <label htmlFor="ag-franja">Franja del mentor</label>
-                      <select id="ag-franja" value={ventana.idDisponibilidad}
-                        onChange={(e) => { setVentanaId(e.target.value); setDesde(''); setHasta(''); setBloqueSeleccionado(null); }}>
-                        {ventanas.map((v) => (
-                          <option key={v.idDisponibilidad} value={v.idDisponibilidad}>{hora12(deMinutos(v.inicio))} – {hora12(deMinutos(v.fin))}</option>
-                        ))}
-                      </select>
-                    </>
-                  )}
-                  <p className="bm-ayuda">
-                    El mentor atiende de <strong>{hora12(deMinutos(ventana.inicio))}</strong> a <strong>{hora12(deMinutos(ventana.fin))}</strong>.
-                    Elige a qué hora quieres empezar y a qué hora terminar.
-                  </p>
-                  <div className="ag-rango-campos">
-                    <div>
-                      <label htmlFor="ag-desde">Desde</label>
-                      <select id="ag-desde" value={desde}
-                        onChange={(e) => { setDesde(e.target.value); setHasta(''); setBloqueSeleccionado(null); }}>
-                        <option value="" disabled>Elige la hora</option>
-                        {puntos(ventana.inicio, ventana.fin - 30).map((t) => <option key={t} value={t}>{hora12(deMinutos(t))}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label htmlFor="ag-hasta">Hasta</label>
-                      <select id="ag-hasta" value={hasta} disabled={desde === ''}
-                        onChange={(e) => { setHasta(e.target.value); elegirRango(ventana, desde, e.target.value); }}>
-                        <option value="" disabled>Elige la hora</option>
-                        {desde !== '' && puntos(Number(desde) + 30, ventana.fin).map((t) => <option key={t} value={t}>{hora12(deMinutos(t))}</option>)}
-                      </select>
-                    </div>
-                  </div>
+            <div className="ag-col">
+              {mostrarCurso && (
+                <div className="ag-bloque">
+                  <h3><span className="ag-num">2</span> Curso a reforzar <small>opcional</small></h3>
+                  <Desplegable id="curso-sesion" value={cursoId} onChange={(e) => setCursoId(e.target.value)} aria-label="Curso que quieres reforzar">
+                    <option value="">Sin especificar</option>
+                    {cursos.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </Desplegable>
                 </div>
               )}
-            </>
-          )}
 
-          <div className="bm-acciones">
-            <button
-              type="button"
-              className="bm-secundario"
-              onClick={onVolver}
-            >
-              Volver
-            </button>
+              <div className="ag-bloque ag-horas">
+                <h3><span className="ag-num">{nCurso + 2}</span> Elige la hora<small>Empieza y dura</small></h3>
 
-            <button
-              type="button"
-              className="bm-primario"
-              onClick={confirmarReserva}
-              disabled={!bloqueSeleccionado || guardando}
-            >
-              {guardando ? 'Confirmando...' : (reprogramando ? 'Confirmar cambio' : 'Confirmar reserva')}
-            </button>
+                {!fecha && (
+                  <div className="ag-vacio">
+                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+                    </svg>
+                    <p>Primero elige un día en el calendario y aquí verás las horas disponibles.</p>
+                  </div>
+                )}
+
+                {fecha && !ventana && (
+                  <p className="bm-ayuda">{fecha < obtenerFechaLocal() ? 'Elige una fecha desde hoy.' : 'El mentor no tiene horarios para ese día.'}</p>
+                )}
+
+                {fecha && ventana && (
+                  <div className="ag-rango" key={fecha}>
+                    <p className="ag-fecha-larga">{fechaLarga(fecha)}</p>
+
+                    {ventanas.length > 1 && (
+                      <div className="ag-franjas" role="tablist" aria-label="Franja del mentor">
+                        {ventanas.map((v) => (
+                          <button key={v.idDisponibilidad} type="button" role="tab" aria-selected={v.idDisponibilidad === ventana.idDisponibilidad}
+                            className={`ag-franja${v.idDisponibilidad === ventana.idDisponibilidad ? ' activa' : ''}`}
+                            onClick={() => { setVentanaId(v.idDisponibilidad); setDesde(''); setHasta(''); setBloqueSeleccionado(null); }}>
+                            {hora12(deMinutos(v.inicio))} – {hora12(deMinutos(v.fin))}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <p className="ag-sub">¿A qué hora empiezas?</p>
+                    <div className="ag-chips" role="radiogroup" aria-label="Hora de inicio">
+                      {puntos(ventana.inicio, ventana.fin - 30).map((t, i) => (
+                        <button key={t} type="button" role="radio" aria-checked={desde === t}
+                          className={`ag-chip${desde === t ? ' elegido' : ''}`} style={{ '--i': i }} onClick={() => elegirInicio(t)}>
+                          {hora12(deMinutos(t))}
+                        </button>
+                      ))}
+                    </div>
+
+                    {desde !== '' && (
+                      <div className="ag-duracion">
+                        <p className="ag-sub">¿Cuánto tiempo?</p>
+                        <div className="ag-chips" role="radiogroup" aria-label="Duración">
+                          {duraciones.map((m, i) => (
+                            <button key={m} type="button" role="radio" aria-checked={hasta === desde + m}
+                              className={`ag-chip${hasta === desde + m ? ' elegido' : ''}`} style={{ '--i': i }} onClick={() => elegirDuracion(m)}>
+                              {duracionTexto(m)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className={`ag-boleto${bloqueSeleccionado ? ' listo' : ''}`} aria-live="polite">
+                  <p className="ag-boleto-tit">Tu reserva</p>
+                  <dl>
+                    {!reprogramando && <div><dt>Curso</dt><dd>{cursos.find((c) => String(c.id) === String(cursoId))?.nombre || 'Sin especificar'}</dd></div>}
+                    <div><dt>Día</dt><dd key={fecha}>{fecha ? fechaLarga(fecha) : 'Sin elegir'}</dd></div>
+                    <div><dt>Hora</dt><dd key={bloqueSeleccionado ? `${desde}-${hasta}` : 'x'}>{bloqueSeleccionado
+                      ? `${horaCorta(bloqueSeleccionado.horaInicio)} – ${horaCorta(bloqueSeleccionado.horaFin)} · ${duracionTexto(hasta - desde)}`
+                      : 'Sin elegir'}</dd></div>
+                  </dl>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <footer className="ag-pie">
+            <div className={`ag-resumen${bloqueSeleccionado ? ' listo' : ''}`} aria-live="polite">
+              {bloqueSeleccionado ? (
+                <>
+                  <span className="ag-resumen-ico" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  </span>
+                  <strong>Todo listo para enviar</strong>
+                </>
+              ) : (
+                <span className="ag-resumen-vacio">Elige un día y una hora para continuar.</span>
+              )}
+            </div>
+            <div className="ag-botones">
+              <button type="button" className="bm-secundario" onClick={onVolver}>Volver</button>
+              <button type="button" className="bm-primario" onClick={confirmarReserva} disabled={!bloqueSeleccionado || guardando}>
+                {guardando ? 'Confirmando...' : (reprogramando ? 'Confirmar cambio' : 'Confirmar reserva')}
+              </button>
+            </div>
+          </footer>
         </>
       )}
     </section>
